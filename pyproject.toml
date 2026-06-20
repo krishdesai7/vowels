@@ -6,11 +6,15 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "altair>=6.2.1",
-    "fire>=0.7.1",
     "ipykernel>=7.3.0",
+    "numpy>=2.0",
     "polars>=1.41.2",
     "praat-parselmouth>=0.4.7",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+vowels = "vowels.cli:app"
 
 [build-system]
 requires = ["uv_build<=0.11.23"]
@@ -39,6 +43,7 @@ docstring-code-format = true
 [dependency-groups]
 dev = [
     "pyrefly>=1.1.1",
+    "pytest>=8.0",
     "ruff>=0.15.18",
 ]
 

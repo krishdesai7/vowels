@@ -1,0 +1,1113 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 117.98784580498867 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "silences" 
+        xmin = 0 
+        xmax = 117.98784580498867 
+        intervals: size = 199 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.8819229024943344 
+            text = "silent" 
+        intervals [2]:
+            xmin = 0.8819229024943344 
+            xmax = 1.3539229024943344 
+            text = "CURE_your" 
+        intervals [3]:
+            xmin = 1.3539229024943344 
+            xmax = 1.6659229024943345 
+            text = "silent" 
+        intervals [4]:
+            xmin = 1.6659229024943345 
+            xmax = 2.1859229024943345 
+            text = "GOAT_home" 
+        intervals [5]:
+            xmin = 2.1859229024943345 
+            xmax = 2.4099229024943343 
+            text = "silent" 
+        intervals [6]:
+            xmin = 2.4099229024943343 
+            xmax = 2.8659229024943342 
+            text = "DRESS_dress" 
+        intervals [7]:
+            xmin = 2.8659229024943342 
+            xmax = 3.3459229024943347 
+            text = "silent" 
+        intervals [8]:
+            xmin = 3.3459229024943347 
+            xmax = 3.7139229024943345 
+            text = "2COMMA_comma" 
+        intervals [9]:
+            xmin = 3.7139229024943345 
+            xmax = 4.233922902494334 
+            text = "silent" 
+        intervals [10]:
+            xmin = 4.233922902494334 
+            xmax = 4.6419229024943345 
+            text = "2HAPPY_coffee" 
+        intervals [11]:
+            xmin = 4.6419229024943345 
+            xmax = 5.137922902494335 
+            text = "silent" 
+        intervals [12]:
+            xmin = 5.137922902494335 
+            xmax = 5.457922902494334 
+            text = "PRICE_try" 
+        intervals [13]:
+            xmin = 5.457922902494334 
+            xmax = 6.097922902494335 
+            text = "silent" 
+        intervals [14]:
+            xmin = 6.097922902494335 
+            xmax = 6.329922902494334 
+            text = "START_start" 
+        intervals [15]:
+            xmin = 6.329922902494334 
+            xmax = 7.137922902494335 
+            text = "silent" 
+        intervals [16]:
+            xmin = 7.137922902494335 
+            xmax = 7.465922902494334 
+            text = "FORCE_door" 
+        intervals [17]:
+            xmin = 7.465922902494334 
+            xmax = 8.041922902494335 
+            text = "silent" 
+        intervals [18]:
+            xmin = 8.041922902494335 
+            xmax = 8.409922902494335 
+            text = "TRAP_bad" 
+        intervals [19]:
+            xmin = 8.409922902494335 
+            xmax = 9.041922902494335 
+            text = "silent" 
+        intervals [20]:
+            xmin = 9.041922902494335 
+            xmax = 9.321922902494334 
+            text = "CURE_cure" 
+        intervals [21]:
+            xmin = 9.321922902494334 
+            xmax = 11.129922902494334 
+            text = "silent" 
+        intervals [22]:
+            xmin = 11.129922902494334 
+            xmax = 11.497922902494334 
+            text = "KIT_ship" 
+        intervals [23]:
+            xmin = 11.497922902494334 
+            xmax = 12.321922902494334 
+            text = "silent" 
+        intervals [24]:
+            xmin = 12.321922902494334 
+            xmax = 12.665922902494335 
+            text = "CHOICE_coin" 
+        intervals [25]:
+            xmin = 12.665922902494335 
+            xmax = 13.337922902494334 
+            text = "silent" 
+        intervals [26]:
+            xmin = 13.337922902494334 
+            xmax = 13.505922902494335 
+            text = "FACE_day" 
+        intervals [27]:
+            xmin = 13.505922902494335 
+            xmax = 14.257922902494334 
+            text = "silent" 
+        intervals [28]:
+            xmin = 14.257922902494334 
+            xmax = 14.529922902494334 
+            text = "KIT_kit" 
+        intervals [29]:
+            xmin = 14.529922902494334 
+            xmax = 14.649922902494335 
+            text = "silent" 
+        intervals [30]:
+            xmin = 14.649922902494335 
+            xmax = 14.817922902494335 
+            text = "BATH_dance" 
+        intervals [31]:
+            xmin = 14.817922902494335 
+            xmax = 15.265922902494335 
+            text = "silent" 
+        intervals [32]:
+            xmin = 15.265922902494335 
+            xmax = 15.561922902494334 
+            text = "MOUTH_mouth" 
+        intervals [33]:
+            xmin = 15.561922902494334 
+            xmax = 16.585922902494335 
+            text = "silent" 
+        intervals [34]:
+            xmin = 16.585922902494335 
+            xmax = 16.865922902494336 
+            text = "CURE_sure" 
+        intervals [35]:
+            xmin = 16.865922902494336 
+            xmax = 17.585922902494335 
+            text = "silent" 
+        intervals [36]:
+            xmin = 17.585922902494335 
+            xmax = 17.921922902494334 
+            text = "NURSE_term" 
+        intervals [37]:
+            xmin = 17.921922902494334 
+            xmax = 18.849922902494335 
+            text = "silent" 
+        intervals [38]:
+            xmin = 18.849922902494335 
+            xmax = 19.353922902494336 
+            text = "PRICE_price" 
+        intervals [39]:
+            xmin = 19.353922902494336 
+            xmax = 19.937922902494336 
+            text = "silent" 
+        intervals [40]:
+            xmin = 19.937922902494336 
+            xmax = 20.345922902494333 
+            text = "CHOICE_join" 
+        intervals [41]:
+            xmin = 20.345922902494333 
+            xmax = 20.961922902494337 
+            text = "silent" 
+        intervals [42]:
+            xmin = 20.961922902494337 
+            xmax = 21.289922902494336 
+            text = "FLEECE_bleed" 
+        intervals [43]:
+            xmin = 21.289922902494336 
+            xmax = 21.969922902494336 
+            text = "silent" 
+        intervals [44]:
+            xmin = 21.969922902494336 
+            xmax = 22.233922902494335 
+            text = "DRESS_wet" 
+        intervals [45]:
+            xmin = 22.233922902494335 
+            xmax = 23.153922902494333 
+            text = "silent" 
+        intervals [46]:
+            xmin = 23.153922902494333 
+            xmax = 23.425922902494335 
+            text = "LOT_dot" 
+        intervals [47]:
+            xmin = 23.425922902494335 
+            xmax = 24.353922902494336 
+            text = "silent" 
+        intervals [48]:
+            xmin = 24.353922902494336 
+            xmax = 24.657922902494334 
+            text = "NEAR_fear" 
+        intervals [49]:
+            xmin = 24.657922902494334 
+            xmax = 25.417922902494336 
+            text = "silent" 
+        intervals [50]:
+            xmin = 25.417922902494336 
+            xmax = 25.561922902494334 
+            text = "STRUT_cup" 
+        intervals [51]:
+            xmin = 25.561922902494334 
+            xmax = 26.401922902494334 
+            text = "silent" 
+        intervals [52]:
+            xmin = 26.401922902494334 
+            xmax = 26.577922902494336 
+            text = "TRAP_tap" 
+        intervals [53]:
+            xmin = 26.577922902494336 
+            xmax = 27.481922902494336 
+            text = "silent" 
+        intervals [54]:
+            xmin = 27.481922902494336 
+            xmax = 27.721922902494335 
+            text = "FACE_bait" 
+        intervals [55]:
+            xmin = 27.721922902494335 
+            xmax = 28.593922902494334 
+            text = "silent" 
+        intervals [56]:
+            xmin = 28.593922902494334 
+            xmax = 28.921922902494334 
+            text = "START_far" 
+        intervals [57]:
+            xmin = 28.921922902494334 
+            xmax = 29.865922902494336 
+            text = "silent" 
+        intervals [58]:
+            xmin = 29.865922902494336 
+            xmax = 30.081922902494334 
+            text = "TRAP_cat" 
+        intervals [59]:
+            xmin = 30.081922902494334 
+            xmax = 30.881922902494335 
+            text = "silent" 
+        intervals [60]:
+            xmin = 30.881922902494335 
+            xmax = 31.281922902494333 
+            text = "2LETTER_letter" 
+        intervals [61]:
+            xmin = 31.281922902494333 
+            xmax = 32.28192290249434 
+            text = "silent" 
+        intervals [62]:
+            xmin = 32.28192290249434 
+            xmax = 32.43392290249434 
+            text = "FOOT_put" 
+        intervals [63]:
+            xmin = 32.43392290249434 
+            xmax = 33.40992290249434 
+            text = "silent" 
+        intervals [64]:
+            xmin = 33.40992290249434 
+            xmax = 33.761922902494334 
+            text = "NORTH_war" 
+        intervals [65]:
+            xmin = 33.761922902494334 
+            xmax = 34.849922902494335 
+            text = "silent" 
+        intervals [66]:
+            xmin = 34.849922902494335 
+            xmax = 35.09792290249433 
+            text = "LOT_got" 
+        intervals [67]:
+            xmin = 35.09792290249433 
+            xmax = 35.96992290249433 
+            text = "silent" 
+        intervals [68]:
+            xmin = 35.96992290249433 
+            xmax = 36.193922902494336 
+            text = "NURSE_hurt" 
+        intervals [69]:
+            xmin = 36.193922902494336 
+            xmax = 37.297922902494335 
+            text = "silent" 
+        intervals [70]:
+            xmin = 37.297922902494335 
+            xmax = 37.62592290249434 
+            text = "NEAR_here" 
+        intervals [71]:
+            xmin = 37.62592290249434 
+            xmax = 38.321922902494336 
+            text = "silent" 
+        intervals [72]:
+            xmin = 38.321922902494336 
+            xmax = 38.64992290249433 
+            text = "NORTH_north" 
+        intervals [73]:
+            xmin = 38.64992290249433 
+            xmax = 39.705922902494336 
+            text = "silent" 
+        intervals [74]:
+            xmin = 39.705922902494336 
+            xmax = 40.08992290249434 
+            text = "CHOICE_choice" 
+        intervals [75]:
+            xmin = 40.08992290249434 
+            xmax = 40.96192290249434 
+            text = "silent" 
+        intervals [76]:
+            xmin = 40.96192290249434 
+            xmax = 41.44192290249433 
+            text = "FACE_face" 
+        intervals [77]:
+            xmin = 41.44192290249433 
+            xmax = 42.22592290249433 
+            text = "silent" 
+        intervals [78]:
+            xmin = 42.22592290249433 
+            xmax = 42.54592290249433 
+            text = "SQUARE_care" 
+        intervals [79]:
+            xmin = 42.54592290249433 
+            xmax = 43.26592290249434 
+            text = "silent" 
+        intervals [80]:
+            xmin = 43.26592290249434 
+            xmax = 43.48192290249433 
+            text = "STRUT_trunk" 
+        intervals [81]:
+            xmin = 43.48192290249433 
+            xmax = 44.37792290249433 
+            text = "silent" 
+        intervals [82]:
+            xmin = 44.37792290249433 
+            xmax = 44.60992290249433 
+            text = "MOUTH_out" 
+        intervals [83]:
+            xmin = 44.60992290249433 
+            xmax = 45.489922902494335 
+            text = "silent" 
+        intervals [84]:
+            xmin = 45.489922902494335 
+            xmax = 45.86592290249433 
+            text = "2COMMA_quota" 
+        intervals [85]:
+            xmin = 45.86592290249433 
+            xmax = 46.64992290249433 
+            text = "silent" 
+        intervals [86]:
+            xmin = 46.64992290249433 
+            xmax = 47.00992290249434 
+            text = "SQUARE_air" 
+        intervals [87]:
+            xmin = 47.00992290249434 
+            xmax = 47.873922902494336 
+            text = "silent" 
+        intervals [88]:
+            xmin = 47.873922902494336 
+            xmax = 48.273922902494334 
+            text = "NORTH_born" 
+        intervals [89]:
+            xmin = 48.273922902494334 
+            xmax = 49.065922902494336 
+            text = "silent" 
+        intervals [90]:
+            xmin = 49.065922902494336 
+            xmax = 49.31392290249433 
+            text = "START_heart" 
+        intervals [91]:
+            xmin = 49.31392290249433 
+            xmax = 50.31392290249433 
+            text = "silent" 
+        intervals [92]:
+            xmin = 50.31392290249433 
+            xmax = 50.617922902494335 
+            text = "PALM_spa" 
+        intervals [93]:
+            xmin = 50.617922902494335 
+            xmax = 51.681922902494335 
+            text = "silent" 
+        intervals [94]:
+            xmin = 51.681922902494335 
+            xmax = 52.03392290249433 
+            text = "NORTH_storm" 
+        intervals [95]:
+            xmin = 52.03392290249433 
+            xmax = 52.825922902494334 
+            text = "silent" 
+        intervals [96]:
+            xmin = 52.825922902494334 
+            xmax = 53.00992290249434 
+            text = "TRAP_trap" 
+        intervals [97]:
+            xmin = 53.00992290249434 
+            xmax = 54.169922902494335 
+            text = "silent" 
+        intervals [98]:
+            xmin = 54.169922902494335 
+            xmax = 54.30592290249434 
+            text = "FOOT_foot" 
+        intervals [99]:
+            xmin = 54.30592290249434 
+            xmax = 55.449922902494336 
+            text = "silent" 
+        intervals [100]:
+            xmin = 55.449922902494336 
+            xmax = 55.633922902494334 
+            text = "STRUT_strut" 
+        intervals [101]:
+            xmin = 55.633922902494334 
+            xmax = 56.633922902494334 
+            text = "silent" 
+        intervals [102]:
+            xmin = 56.633922902494334 
+            xmax = 56.98592290249434 
+            text = "2LETTER_butter" 
+        intervals [103]:
+            xmin = 56.98592290249434 
+            xmax = 57.85792290249434 
+            text = "silent" 
+        intervals [104]:
+            xmin = 57.85792290249434 
+            xmax = 58.065922902494336 
+            text = "FLEECE_beat" 
+        intervals [105]:
+            xmin = 58.065922902494336 
+            xmax = 59.193922902494336 
+            text = "silent" 
+        intervals [106]:
+            xmin = 59.193922902494336 
+            xmax = 59.35392290249433 
+            text = "FLEECE_speak" 
+        intervals [107]:
+            xmin = 59.35392290249433 
+            xmax = 60.233922902494335 
+            text = "silent" 
+        intervals [108]:
+            xmin = 60.233922902494335 
+            xmax = 60.56192290249434 
+            text = "PRICE_hide" 
+        intervals [109]:
+            xmin = 60.56192290249434 
+            xmax = 61.745922902494335 
+            text = "silent" 
+        intervals [110]:
+            xmin = 61.745922902494335 
+            xmax = 62.09792290249433 
+            text = "PRICE_buy" 
+        intervals [111]:
+            xmin = 62.09792290249433 
+            xmax = 62.873922902494336 
+            text = "silent" 
+        intervals [112]:
+            xmin = 62.873922902494336 
+            xmax = 63.169922902494335 
+            text = "SQUARE_fair" 
+        intervals [113]:
+            xmin = 63.169922902494335 
+            xmax = 64.06592290249434 
+            text = "silent" 
+        intervals [114]:
+            xmin = 64.06592290249434 
+            xmax = 64.28192290249433 
+            text = "THOUGHT_taught" 
+        intervals [115]:
+            xmin = 64.28192290249433 
+            xmax = 65.16192290249434 
+            text = "silent" 
+        intervals [116]:
+            xmin = 65.16192290249434 
+            xmax = 65.45792290249433 
+            text = "THOUGHT_jaw" 
+        intervals [117]:
+            xmin = 65.45792290249433 
+            xmax = 66.14592290249433 
+            text = "silent" 
+        intervals [118]:
+            xmin = 66.14592290249433 
+            xmax = 66.46592290249434 
+            text = "NURSE_nurse" 
+        intervals [119]:
+            xmin = 66.46592290249434 
+            xmax = 67.46592290249434 
+            text = "silent" 
+        intervals [120]:
+            xmin = 67.46592290249434 
+            xmax = 67.67392290249434 
+            text = "THOUGHT_caught" 
+        intervals [121]:
+            xmin = 67.67392290249434 
+            xmax = 68.67392290249434 
+            text = "silent" 
+        intervals [122]:
+            xmin = 68.67392290249434 
+            xmax = 68.92992290249434 
+            text = "LOT_lot" 
+        intervals [123]:
+            xmin = 68.92992290249434 
+            xmax = 70.00992290249434 
+            text = "silent" 
+        intervals [124]:
+            xmin = 70.00992290249434 
+            xmax = 70.15392290249433 
+            text = "DRESS_step" 
+        intervals [125]:
+            xmin = 70.15392290249433 
+            xmax = 71.16192290249434 
+            text = "silent" 
+        intervals [126]:
+            xmin = 71.16192290249434 
+            xmax = 71.52192290249434 
+            text = "NEAR_near" 
+        intervals [127]:
+            xmin = 71.52192290249434 
+            xmax = 72.41792290249434 
+            text = "silent" 
+        intervals [128]:
+            xmin = 72.41792290249434 
+            xmax = 72.57792290249434 
+            text = "GOOSE_tooth" 
+        intervals [129]:
+            xmin = 72.57792290249434 
+            xmax = 73.70592290249434 
+            text = "silent" 
+        intervals [130]:
+            xmin = 73.70592290249434 
+            xmax = 73.90592290249434 
+            text = "LOT_stop" 
+        intervals [131]:
+            xmin = 73.90592290249434 
+            xmax = 75.18592290249434 
+            text = "silent" 
+        intervals [132]:
+            xmin = 75.18592290249434 
+            xmax = 75.49792290249434 
+            text = "PALM_psalm" 
+        intervals [133]:
+            xmin = 75.49792290249434 
+            xmax = 76.76192290249433 
+            text = "silent" 
+        intervals [134]:
+            xmin = 76.76192290249433 
+            xmax = 76.93792290249434 
+            text = "2LETTER_paper" 
+        intervals [135]:
+            xmin = 76.93792290249434 
+            xmax = 77.69792290249434 
+            text = "silent" 
+        intervals [136]:
+            xmin = 77.69792290249434 
+            xmax = 78.01792290249433 
+            text = "KIT_sit" 
+        intervals [137]:
+            xmin = 78.01792290249433 
+            xmax = 79.12192290249433 
+            text = "silent" 
+        intervals [138]:
+            xmin = 79.12192290249433 
+            xmax = 79.42592290249434 
+            text = "FLEECE_feel" 
+        intervals [139]:
+            xmin = 79.42592290249434 
+            xmax = 80.34592290249434 
+            text = "silent" 
+        intervals [140]:
+            xmin = 80.34592290249434 
+            xmax = 80.79392290249433 
+            text = "GOOSE_goose" 
+        intervals [141]:
+            xmin = 80.79392290249433 
+            xmax = 81.44192290249434 
+            text = "silent" 
+        intervals [142]:
+            xmin = 81.44192290249434 
+            xmax = 81.67392290249434 
+            text = "NURSE_work" 
+        intervals [143]:
+            xmin = 81.67392290249434 
+            xmax = 82.65792290249433 
+            text = "silent" 
+        intervals [144]:
+            xmin = 82.65792290249433 
+            xmax = 82.78592290249433 
+            text = "FOOT_book" 
+        intervals [145]:
+            xmin = 82.78592290249433 
+            xmax = 83.76192290249433 
+            text = "silent" 
+        intervals [146]:
+            xmin = 83.76192290249433 
+            xmax = 84.08192290249434 
+            text = "CHOICE_boy" 
+        intervals [147]:
+            xmin = 84.08192290249434 
+            xmax = 85.05792290249434 
+            text = "silent" 
+        intervals [148]:
+            xmin = 85.05792290249434 
+            xmax = 85.28192290249433 
+            text = "GOAT_boat" 
+        intervals [149]:
+            xmin = 85.28192290249433 
+            xmax = 86.16992290249433 
+            text = "silent" 
+        intervals [150]:
+            xmin = 86.16992290249433 
+            xmax = 86.60992290249433 
+            text = "CLOTH_boss" 
+        intervals [151]:
+            xmin = 86.60992290249433 
+            xmax = 87.51392290249434 
+            text = "silent" 
+        intervals [152]:
+            xmin = 87.51392290249434 
+            xmax = 87.89792290249433 
+            text = "2COMMA_sofa" 
+        intervals [153]:
+            xmin = 87.89792290249433 
+            xmax = 89.12992290249434 
+            text = "silent" 
+        intervals [154]:
+            xmin = 89.12992290249434 
+            xmax = 89.31392290249434 
+            text = "FORCE_force" 
+        intervals [155]:
+            xmin = 89.31392290249434 
+            xmax = 90.15392290249433 
+            text = "silent" 
+        intervals [156]:
+            xmin = 90.15392290249433 
+            xmax = 90.62592290249434 
+            text = "GOAT_know" 
+        intervals [157]:
+            xmin = 90.62592290249434 
+            xmax = 91.71392290249433 
+            text = "silent" 
+        intervals [158]:
+            xmin = 91.71392290249433 
+            xmax = 91.96192290249434 
+            text = "2HAPPY_city" 
+        intervals [159]:
+            xmin = 91.96192290249434 
+            xmax = 92.92992290249434 
+            text = "silent" 
+        intervals [160]:
+            xmin = 92.92992290249434 
+            xmax = 93.23392290249434 
+            text = "NEAR_beer" 
+        intervals [161]:
+            xmin = 93.23392290249434 
+            xmax = 94.18592290249434 
+            text = "silent" 
+        intervals [162]:
+            xmin = 94.18592290249434 
+            xmax = 94.49792290249434 
+            text = "MOUTH_cow" 
+        intervals [163]:
+            xmin = 94.49792290249434 
+            xmax = 95.38592290249434 
+            text = "silent" 
+        intervals [164]:
+            xmin = 95.38592290249434 
+            xmax = 95.71392290249433 
+            text = "PALM_palm" 
+        intervals [165]:
+            xmin = 95.71392290249433 
+            xmax = 96.76992290249434 
+            text = "silent" 
+        intervals [166]:
+            xmin = 96.76992290249434 
+            xmax = 96.98592290249434 
+            text = "CLOTH_cloth" 
+        intervals [167]:
+            xmin = 96.98592290249434 
+            xmax = 97.93792290249434 
+            text = "silent" 
+        intervals [168]:
+            xmin = 97.93792290249434 
+            xmax = 98.29792290249434 
+            text = "FLEECE_bleed" 
+        intervals [169]:
+            xmin = 98.29792290249434 
+            xmax = 99.40992290249433 
+            text = "silent" 
+        intervals [170]:
+            xmin = 99.40992290249433 
+            xmax = 99.89792290249433 
+            text = "CLOTH_cross" 
+        intervals [171]:
+            xmin = 99.89792290249433 
+            xmax = 100.60192290249434 
+            text = "silent" 
+        intervals [172]:
+            xmin = 100.60192290249434 
+            xmax = 100.98592290249434 
+            text = "2HAPPY_happy" 
+        intervals [173]:
+            xmin = 100.98592290249434 
+            xmax = 101.85792290249434 
+            text = "silent" 
+        intervals [174]:
+            xmin = 101.85792290249434 
+            xmax = 102.12192290249433 
+            text = "GOOSE_food" 
+        intervals [175]:
+            xmin = 102.12192290249433 
+            xmax = 103.04992290249433 
+            text = "silent" 
+        intervals [176]:
+            xmin = 103.04992290249433 
+            xmax = 103.31392290249434 
+            text = "DRESS_bed" 
+        intervals [177]:
+            xmin = 103.31392290249434 
+            xmax = 104.26592290249434 
+            text = "silent" 
+        intervals [178]:
+            xmin = 104.26592290249434 
+            xmax = 104.72992290249434 
+            text = "FLEECE_fleece" 
+        intervals [179]:
+            xmin = 104.72992290249434 
+            xmax = 105.51392290249434 
+            text = "silent" 
+        intervals [180]:
+            xmin = 105.51392290249434 
+            xmax = 105.74592290249434 
+            text = "GOAT_goat" 
+        intervals [181]:
+            xmin = 105.74592290249434 
+            xmax = 106.68192290249434 
+            text = "silent" 
+        intervals [182]:
+            xmin = 106.68192290249434 
+            xmax = 106.92192290249433 
+            text = "THOUGHT_thought" 
+        intervals [183]:
+            xmin = 106.92192290249433 
+            xmax = 107.84992290249434 
+            text = "silent" 
+        intervals [184]:
+            xmin = 107.84992290249434 
+            xmax = 108.09792290249433 
+            text = "BATH_bath" 
+        intervals [185]:
+            xmin = 108.09792290249433 
+            xmax = 109.35392290249433 
+            text = "silent" 
+        intervals [186]:
+            xmin = 109.35392290249433 
+            xmax = 109.64192290249434 
+            text = "SQUARE_square" 
+        intervals [187]:
+            xmin = 109.64192290249434 
+            xmax = 110.51392290249434 
+            text = "silent" 
+        intervals [188]:
+            xmin = 110.51392290249434 
+            xmax = 110.72192290249434 
+            text = "BATH_path" 
+        intervals [189]:
+            xmin = 110.72192290249434 
+            xmax = 111.83392290249434 
+            text = "silent" 
+        intervals [190]:
+            xmin = 111.83392290249434 
+            xmax = 112.10592290249434 
+            text = "CURE_pure" 
+        intervals [191]:
+            xmin = 112.10592290249434 
+            xmax = 112.99392290249433 
+            text = "silent" 
+        intervals [192]:
+            xmin = 112.99392290249433 
+            xmax = 113.28992290249434 
+            text = "FOOT_good" 
+        intervals [193]:
+            xmin = 113.28992290249434 
+            xmax = 114.24192290249434 
+            text = "silent" 
+        intervals [194]:
+            xmin = 114.24192290249434 
+            xmax = 114.41792290249434 
+            text = "KIT_bit" 
+        intervals [195]:
+            xmin = 114.41792290249434 
+            xmax = 115.59392290249434 
+            text = "silent" 
+        intervals [196]:
+            xmin = 115.59392290249434 
+            xmax = 115.76192290249433 
+            text = "FORCE_porch" 
+        intervals [197]:
+            xmin = 115.76192290249433 
+            xmax = 116.81792290249433 
+            text = "silent" 
+        intervals [198]:
+            xmin = 116.81792290249433 
+            xmax = 117.10592290249434 
+            text = "PALM_calm" 
+        intervals [199]:
+            xmin = 117.10592290249434 
+            xmax = 117.98784580498867 
+            text = "silent" 
+    item [2]:
+        class = "TextTier" 
+        name = "nucleus" 
+        xmin = 0 
+        xmax = 117.98784580498867 
+        points: size = 99 
+        points [1]:
+            number = 1.1179229024943345 
+            mark = "CURE_your" 
+        points [2]:
+            number = 1.9259229024943345 
+            mark = "GOAT_home" 
+        points [3]:
+            number = 2.637922902494334 
+            mark = "DRESS_dress" 
+        points [4]:
+            number = 3.6525895691610013 
+            mark = "2COMMA_comma" 
+        points [5]:
+            number = 4.573922902494335 
+            mark = "2HAPPY_coffee" 
+        points [6]:
+            number = 5.297922902494335 
+            mark = "PRICE_try" 
+        points [7]:
+            number = 6.2139229024943345 
+            mark = "START_start" 
+        points [8]:
+            number = 7.301922902494335 
+            mark = "FORCE_door" 
+        points [9]:
+            number = 8.225922902494336 
+            mark = "TRAP_bad" 
+        points [10]:
+            number = 9.181922902494335 
+            mark = "CURE_cure" 
+        points [11]:
+            number = 11.313922902494333 
+            mark = "KIT_ship" 
+        points [12]:
+            number = 12.493922902494335 
+            mark = "CHOICE_coin" 
+        points [13]:
+            number = 13.421922902494334 
+            mark = "FACE_day" 
+        points [14]:
+            number = 14.393922902494335 
+            mark = "KIT_kit" 
+        points [15]:
+            number = 14.733922902494335 
+            mark = "BATH_dance" 
+        points [16]:
+            number = 15.413922902494335 
+            mark = "MOUTH_mouth" 
+        points [17]:
+            number = 16.725922902494336 
+            mark = "CURE_sure" 
+        points [18]:
+            number = 17.753922902494335 
+            mark = "NURSE_term" 
+        points [19]:
+            number = 19.101922902494337 
+            mark = "PRICE_price" 
+        points [20]:
+            number = 20.141922902494336 
+            mark = "CHOICE_join" 
+        points [21]:
+            number = 21.125922902494338 
+            mark = "FLEECE_bleed" 
+        points [22]:
+            number = 22.101922902494337 
+            mark = "DRESS_wet" 
+        points [23]:
+            number = 23.289922902494332 
+            mark = "LOT_dot" 
+        points [24]:
+            number = 24.505922902494333 
+            mark = "NEAR_fear" 
+        points [25]:
+            number = 25.489922902494335 
+            mark = "STRUT_cup" 
+        points [26]:
+            number = 26.489922902494335 
+            mark = "TRAP_tap" 
+        points [27]:
+            number = 27.601922902494337 
+            mark = "FACE_bait" 
+        points [28]:
+            number = 28.757922902494336 
+            mark = "START_far" 
+        points [29]:
+            number = 29.973922902494337 
+            mark = "TRAP_cat" 
+        points [30]:
+            number = 31.215256235827667 
+            mark = "2LETTER_letter" 
+        points [31]:
+            number = 32.35792290249434 
+            mark = "FOOT_put" 
+        points [32]:
+            number = 33.58592290249433 
+            mark = "NORTH_war" 
+        points [33]:
+            number = 34.97392290249434 
+            mark = "LOT_got" 
+        points [34]:
+            number = 36.081922902494334 
+            mark = "NURSE_hurt" 
+        points [35]:
+            number = 37.46192290249434 
+            mark = "NEAR_here" 
+        points [36]:
+            number = 38.48592290249434 
+            mark = "NORTH_north" 
+        points [37]:
+            number = 39.89792290249434 
+            mark = "CHOICE_choice" 
+        points [38]:
+            number = 41.20192290249433 
+            mark = "FACE_face" 
+        points [39]:
+            number = 42.38592290249433 
+            mark = "SQUARE_care" 
+        points [40]:
+            number = 43.373922902494336 
+            mark = "STRUT_trunk" 
+        points [41]:
+            number = 44.49392290249433 
+            mark = "MOUTH_out" 
+        points [42]:
+            number = 45.80325623582767 
+            mark = "2COMMA_quota" 
+        points [43]:
+            number = 46.82992290249433 
+            mark = "SQUARE_air" 
+        points [44]:
+            number = 48.07392290249433 
+            mark = "NORTH_born" 
+        points [45]:
+            number = 49.18992290249433 
+            mark = "START_heart" 
+        points [46]:
+            number = 50.465922902494334 
+            mark = "PALM_spa" 
+        points [47]:
+            number = 51.85792290249434 
+            mark = "NORTH_storm" 
+        points [48]:
+            number = 52.91792290249434 
+            mark = "TRAP_trap" 
+        points [49]:
+            number = 54.23792290249433 
+            mark = "FOOT_foot" 
+        points [50]:
+            number = 55.541922902494335 
+            mark = "STRUT_strut" 
+        points [51]:
+            number = 56.92725623582767 
+            mark = "2LETTER_butter" 
+        points [52]:
+            number = 57.96192290249434 
+            mark = "FLEECE_beat" 
+        points [53]:
+            number = 59.273922902494334 
+            mark = "FLEECE_speak" 
+        points [54]:
+            number = 60.39792290249434 
+            mark = "PRICE_hide" 
+        points [55]:
+            number = 61.92192290249433 
+            mark = "PRICE_buy" 
+        points [56]:
+            number = 63.02192290249434 
+            mark = "SQUARE_fair" 
+        points [57]:
+            number = 64.17392290249433 
+            mark = "THOUGHT_taught" 
+        points [58]:
+            number = 65.30992290249434 
+            mark = "THOUGHT_jaw" 
+        points [59]:
+            number = 66.30592290249433 
+            mark = "NURSE_nurse" 
+        points [60]:
+            number = 67.56992290249434 
+            mark = "THOUGHT_caught" 
+        points [61]:
+            number = 68.80192290249434 
+            mark = "LOT_lot" 
+        points [62]:
+            number = 70.08192290249434 
+            mark = "DRESS_step" 
+        points [63]:
+            number = 71.34192290249433 
+            mark = "NEAR_near" 
+        points [64]:
+            number = 72.49792290249434 
+            mark = "GOOSE_tooth" 
+        points [65]:
+            number = 73.80592290249433 
+            mark = "LOT_stop" 
+        points [66]:
+            number = 75.34192290249433 
+            mark = "PALM_psalm" 
+        points [67]:
+            number = 76.908589569161 
+            mark = "2LETTER_paper" 
+        points [68]:
+            number = 77.85792290249434 
+            mark = "KIT_sit" 
+        points [69]:
+            number = 79.27392290249433 
+            mark = "FLEECE_feel" 
+        points [70]:
+            number = 80.56992290249434 
+            mark = "GOOSE_goose" 
+        points [71]:
+            number = 81.55792290249434 
+            mark = "NURSE_work" 
+        points [72]:
+            number = 82.72192290249433 
+            mark = "FOOT_book" 
+        points [73]:
+            number = 83.92192290249434 
+            mark = "CHOICE_boy" 
+        points [74]:
+            number = 85.16992290249433 
+            mark = "GOAT_boat" 
+        points [75]:
+            number = 86.38992290249433 
+            mark = "CLOTH_boss" 
+        points [76]:
+            number = 87.83392290249434 
+            mark = "2COMMA_sofa" 
+        points [77]:
+            number = 89.22192290249434 
+            mark = "FORCE_force" 
+        points [78]:
+            number = 90.38992290249433 
+            mark = "GOAT_know" 
+        points [79]:
+            number = 91.920589569161 
+            mark = "2HAPPY_city" 
+        points [80]:
+            number = 93.08192290249434 
+            mark = "NEAR_beer" 
+        points [81]:
+            number = 94.34192290249433 
+            mark = "MOUTH_cow" 
+        points [82]:
+            number = 95.54992290249433 
+            mark = "PALM_palm" 
+        points [83]:
+            number = 96.87792290249433 
+            mark = "CLOTH_cloth" 
+        points [84]:
+            number = 98.11792290249434 
+            mark = "FLEECE_bleed" 
+        points [85]:
+            number = 99.65392290249433 
+            mark = "CLOTH_cross" 
+        points [86]:
+            number = 100.92192290249434 
+            mark = "2HAPPY_happy" 
+        points [87]:
+            number = 101.98992290249433 
+            mark = "GOOSE_food" 
+        points [88]:
+            number = 103.18192290249434 
+            mark = "DRESS_bed" 
+        points [89]:
+            number = 104.49792290249434 
+            mark = "FLEECE_fleece" 
+        points [90]:
+            number = 105.62992290249434 
+            mark = "GOAT_goat" 
+        points [91]:
+            number = 106.80192290249434 
+            mark = "THOUGHT_thought" 
+        points [92]:
+            number = 107.97392290249434 
+            mark = "BATH_bath" 
+        points [93]:
+            number = 109.49792290249434 
+            mark = "SQUARE_square" 
+        points [94]:
+            number = 110.61792290249434 
+            mark = "BATH_path" 
+        points [95]:
+            number = 111.96992290249435 
+            mark = "CURE_pure" 
+        points [96]:
+            number = 113.14192290249434 
+            mark = "FOOT_good" 
+        points [97]:
+            number = 114.32992290249433 
+            mark = "KIT_bit" 
+        points [98]:
+            number = 115.67792290249434 
+            mark = "FORCE_porch" 
+        points [99]:
+            number = 116.96192290249434 
+            mark = "PALM_calm" 

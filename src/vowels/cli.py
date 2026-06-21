@@ -68,19 +68,24 @@ def formants(
 @app.command()
 def plot(
     session: str,
-    show_diphthongs: Annotated[bool, typer.Option("--diphthongs/--no-diphthongs", help="Include diphthong toggle")] = True,
+    diphthongs: Annotated[bool, typer.Option("--diphthongs", help="Show diphthongs only", is_flag=True)] = False,
+    all_vowels: Annotated[bool, typer.Option("--all", help="Show all vowels", is_flag=True)] = False,
 ) -> None:
     """Generate interactive vowel space HTML from existing formants CSV."""
     from vowels.plots.vowel_space import save_chart
 
-    save_chart(session, show_diphthongs=show_diphthongs)
+    if diphthongs and all_vowels:
+        raise typer.BadParameter("--diphthongs and --all are mutually exclusive")
+    mode = "diphthongs" if diphthongs else "all" if all_vowels else "mono"
+    save_chart(session, mode=mode)
 
 
 @app.command()
 def run(
     session: str,
     gender: Annotated[Gender, typer.Option(help="Speaker gender (M/F/C)")] = Gender.M,
-    diphthongs: Annotated[bool, typer.Option("--diphthongs/--no-diphthongs", help="Enable diphthong two-point measurement")] = True,
+    diphthongs: Annotated[bool, typer.Option("--diphthongs", help="Show diphthongs only in plot", is_flag=True)] = False,
+    all_vowels: Annotated[bool, typer.Option("--all", help="Show all vowels in plot", is_flag=True)] = False,
     min_sounding_interval: Annotated[float, typer.Option(help="Minimum sounding interval (s)")] = 0.12,
 ) -> None:
     """Run the full pipeline: silences → label → nucleus → formants → plot."""
@@ -90,8 +95,11 @@ def run(
     from vowels.pipeline.silences import detect_silences
     from vowels.plots.vowel_space import save_chart
 
+    if diphthongs and all_vowels:
+        raise typer.BadParameter("--diphthongs and --all are mutually exclusive")
+    mode = "diphthongs" if diphthongs else "all" if all_vowels else "mono"
     detect_silences(session, min_sounding_interval=min_sounding_interval)
     label_textgrid(session)
-    make_nucleus_points(session, diphthongs=diphthongs)
+    make_nucleus_points(session, diphthongs=True)
     extract_formants(session, gender=gender.value)
-    save_chart(session, show_diphthongs=diphthongs)
+    save_chart(session, mode=mode)

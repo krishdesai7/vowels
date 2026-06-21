@@ -6,9 +6,16 @@ from vowels.paths import project_root, session_dir
 from vowels.plots.ellipse import precompute_ellipse
 
 
-def build_chart(session: str, show_diphthongs: bool = True) -> alt.LayerChart:
+def build_chart(session: str, mode: str = "mono") -> alt.LayerChart:
     d = session_dir(session)
     df = pl.read_csv(d / f"{session}_formants.csv")
+
+    is_diph = pl.col("label").str.contains(":")
+    if mode == "mono":
+        df = df.filter(~is_diph)
+    elif mode == "diphthongs":
+        df = df.filter(is_diph)
+    # "all" keeps everything
 
     mono_df = df.filter(~pl.col("label").str.contains(":"))
     diph_df = df.filter(pl.col("label").str.contains(":"))
@@ -20,11 +27,6 @@ def build_chart(session: str, show_diphthongs: bool = True) -> alt.LayerChart:
     )
 
     legend_sel = alt.selection_point(fields=["set"], bind="legend")
-    diph_param = alt.param(
-        name="show_diphthongs",
-        value=True,
-        bind=alt.binding_checkbox(name="Show diphthongs "),
-    )
 
     # Layer 1: IPA reference text
     std_path = project_root() / "standard.csv"
@@ -123,7 +125,7 @@ def build_chart(session: str, show_diphthongs: bool = True) -> alt.LayerChart:
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True), axis=None),
                 y=alt.Y("F1:Q", scale=alt.Scale(reverse=True), axis=None),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
-                opacity=alt.condition(diph_param, alt.value(0.65), alt.value(0.0)),
+                opacity=alt.condition(legend_sel, alt.value(0.65), alt.value(0.2)),
                 tooltip=[
                     alt.Tooltip("word:N", title="Word"),
                     alt.Tooltip("set:N", title="Set"),
@@ -136,14 +138,14 @@ def build_chart(session: str, show_diphthongs: bool = True) -> alt.LayerChart:
 
     return (
         alt.layer(*layers)
-        .add_params(legend_sel, diph_param)
+        .add_params(legend_sel)
         .resolve_scale(x="shared", y="shared")
         .properties(width=650, height=550, title=f"Vowel Space — {session}")
     )
 
 
-def save_chart(session: str, show_diphthongs: bool = True) -> None:
+def save_chart(session: str, mode: str = "mono") -> None:
     d = session_dir(session)
     out_path = d / f"{session}_vowel_space.html"
-    build_chart(session, show_diphthongs=show_diphthongs).save(str(out_path))
+    build_chart(session, mode=mode).save(str(out_path))
     print(f"Created {out_path}")

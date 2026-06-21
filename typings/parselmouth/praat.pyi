@@ -1,0 +1,3 @@
+from typing import Any
+
+def call(*args: Any) -> Any: ...

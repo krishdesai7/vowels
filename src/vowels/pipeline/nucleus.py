@@ -1,39 +1,31 @@
+from collections.abc import Callable
+from pathlib import Path
+from typing import Final, Literal
+
 import parselmouth
-from parselmouth.praat import call
 
-from vowels.paths import session_dir
+from .. import DIPHTHONGS, Mode, Wells, session_dir
 
-DIPHTHONGS: set[str] = {
-    "FACE",
-    "GOAT",
-    "PRICE",
-    "CHOICE",
-    "MOUTH",
-    "NEAR",
-    "SQUARE",
-    "CURE",
-}
-
-DISYLLABLE_PREFIX = "2"
-CONSONANT_WEIGHT = 1.0
-VOWEL_WEIGHT = 2.0
-TOTAL_WEIGHT = 2 * (CONSONANT_WEIGHT + VOWEL_WEIGHT)
-SECOND_VOWEL_CENTER_RATIO = (
+DISYLLABLE_PREFIX: Final[Literal["2"]] = "2"
+CONSONANT_WEIGHT: Final[float] = 1.0
+VOWEL_WEIGHT: Final[float] = 2.0
+TOTAL_WEIGHT: Final[float] = 2 * (CONSONANT_WEIGHT + VOWEL_WEIGHT)
+SECOND_VOWEL_CENTER_RATIO: Final[float] = (
     CONSONANT_WEIGHT + VOWEL_WEIGHT + CONSONANT_WEIGHT + (0.5 * VOWEL_WEIGHT)
 ) / TOTAL_WEIGHT
 
 
-def nucleus_time(t1: float, t2: float) -> float:
-    return t1 + 0.5 * (t2 - t1)
+nucleus_time: Callable[[float, float], float] = lambda t1, t2: t1 + 0.5 * (t2 - t1)  # noqa: E731
 
 
-def diphthong_times(t1: float, t2: float) -> tuple[float, float]:
-    dur = t2 - t1
-    return t1 + 0.25 * dur, t1 + 0.75 * dur
+diphthong_times: Callable[[float, float], tuple[float, float]] = lambda t1, t2: (  # noqa: E731
+    t1 + 0.25 * (t2 - t1),
+    t1 + 0.75 * (t2 - t1),
+)
 
-
-def disyllabic_time(t1: float, t2: float) -> float:
-    return t1 + SECOND_VOWEL_CENTER_RATIO * (t2 - t1)
+disyllabic_time: Callable[[float, float], float] = lambda t1, t2: (  # noqa: E731
+    t1 + SECOND_VOWEL_CENTER_RATIO * (t2 - t1)
+)
 
 
 def get_set_name(label: str) -> str:
@@ -44,47 +36,61 @@ def get_set_name(label: str) -> str:
 
 def normalize_label(label: str) -> tuple[str, bool]:
     if label.startswith(DISYLLABLE_PREFIX):
-        return label[len(DISYLLABLE_PREFIX):], True
+        return label[len(DISYLLABLE_PREFIX) :], True
     return label, False
 
 
-def make_nucleus_points(session: str, diphthongs: bool = True) -> None:
-    d = session_dir(session)
-    in_tg = d / f"{session}_labeled.TextGrid"
-    out_tg = d / f"{session}_nucleus.TextGrid"
+def make_nucleus_points(session: str, mode: Mode = Mode.MONO) -> None:
+    d: Path = session_dir(session)
+    in_tg: Path = d / f"{session}_labeled.TextGrid"
+    out_tg: Path = d / f"{session}_nucleus.TextGrid"
 
-    active_diphthongs = DIPHTHONGS if diphthongs else set()
+    active_diphthongs: set[Wells] = DIPHTHONGS if mode == Mode.DIPH else set()
 
-    labeled_tier = 1
-    tg = parselmouth.read(str(in_tg))
-    n_tiers = call(tg, "Get number of tiers")
-    call(tg, "Insert point tier", n_tiers + 1, "nucleus")
-    nucleus_tier = n_tiers + 1
+    labeled_tier: int = 1
+    tg: parselmouth.TextGrid = parselmouth.read(in_tg.as_posix())
+    n_tiers: int = parselmouth.praat.call(tg, "Get number of tiers")
+    parselmouth.praat.call(tg, "Insert point tier", n_tiers + 1, "nucleus")
+    nucleus_tier: int = n_tiers + 1
 
-    n_intervals = call(tg, "Get number of intervals", labeled_tier)
+    n_intervals: int = parselmouth.praat.call(
+        tg, "Get number of intervals", labeled_tier
+    )
     for i in range(1, n_intervals + 1):
-        label = call(tg, "Get label of interval", labeled_tier, i)
+        label: str | None = parselmouth.praat.call(
+            tg, "Get label of interval", labeled_tier, i
+        )
         if not label or label.lower() == "silent":
             continue
 
-        t1 = call(tg, "Get start time of interval", labeled_tier, i)
-        t2 = call(tg, "Get end time of interval", labeled_tier, i)
+        t1: float = parselmouth.praat.call(
+            tg, "Get start time of interval", labeled_tier, i
+        )
+        t2: float = parselmouth.praat.call(
+            tg, "Get end time of interval", labeled_tier, i
+        )
         if t2 - t1 <= 0:
             continue
 
         normalized, is_disyllabic = normalize_label(label)
-        set_name = get_set_name(normalized)
+        set_name: str = get_set_name(normalized)
 
         if is_disyllabic:
-            call(tg, "Insert point", nucleus_tier, disyllabic_time(t1, t2), label)
+            parselmouth.praat.call(
+                tg, "Insert point", nucleus_tier, disyllabic_time(t1, t2), label
+            )
             continue
 
         if set_name in active_diphthongs:
             t_on, t_off = diphthong_times(t1, t2)
-            call(tg, "Insert point", nucleus_tier, t_on, f"{label}:1")
-            call(tg, "Insert point", nucleus_tier, t_off, f"{label}:2")
+            parselmouth.praat.call(tg, "Insert point", nucleus_tier, t_on, f"{label}:1")
+            parselmouth.praat.call(
+                tg, "Insert point", nucleus_tier, t_off, f"{label}:2"
+            )
         else:
-            call(tg, "Insert point", nucleus_tier, nucleus_time(t1, t2), label)
+            parselmouth.praat.call(
+                tg, "Insert point", nucleus_tier, nucleus_time(t1, t2), label
+            )
 
-    call(tg, "Write to text file", str(out_tg))
+    parselmouth.praat.call(tg, "Write to text file", out_tg.as_posix())
     print(f"Created {out_tg}")

@@ -1,7 +1,8 @@
-import parselmouth
-from parselmouth.praat import call
+from pathlib import Path
 
-from vowels.paths import session_dir
+import parselmouth
+
+from .. import session_dir
 
 
 def detect_silences(
@@ -14,12 +15,12 @@ def detect_silences(
     silent_label: str = "silent",
     sounding_label: str = "sounding",
 ) -> None:
-    d = session_dir(session)
-    wav_path = d / f"{session}.wav"
-    out_path = d / f"{session}.TextGrid"
+    d: Path = session_dir(session)
+    wav_path: Path = d / f"{session}.wav"
+    out_path: Path = d / f"{session}.TextGrid"
 
-    sound = parselmouth.Sound(str(wav_path))
-    tg = call(
+    sound: parselmouth.Sound = parselmouth.Sound(str(wav_path))
+    tg: parselmouth.TextGrid = parselmouth.praat.call(
         sound,
         "To TextGrid (silences)",
         min_pitch,
@@ -30,5 +31,5 @@ def detect_silences(
         silent_label,
         sounding_label,
     )
-    call(tg, "Write to text file", str(out_path))
+    parselmouth.praat.call(tg, "Write to text file", str(out_path))
     print(f"Created {out_path}")

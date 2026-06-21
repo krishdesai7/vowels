@@ -21,7 +21,11 @@ requires = ["uv_build<=0.11.23"]
 build-backend = "uv_build"
 
 [tool.pyrefly]
+site-package-path = ["typings"]
 
+[tool.pyright]
+stubPath = "typings"
+extraPaths = ["typings"]
 
 [tool.ruff]
 target-version = "py314"

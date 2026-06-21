@@ -24,17 +24,17 @@ def build_chart(
     mono_df: pl.DataFrame = df.filter(~pl.col("label").str.contains(":"))
     diph_df: pl.DataFrame = df.filter(pl.col("label").str.contains(":"))
 
-    all_sets: list[Wells] = sorted(df["set"].unique().to_list())
+    all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_scale: alt.Scale = alt.Scale(
         domain=all_sets,
-        range=[s.value for s in all_sets],
+        range=[Wells[s].value for s in all_sets],
     )
 
     legend_sel: alt.Parameter = alt.selection_point(fields=["set"], bind="legend")
 
     # Layer 1: IPA reference text
-    std_path: Path = project_root() / "standard.csv"
-    std_df: pl.DataFrame = pl.read_csv(std_path).drop_nulls(subset=["F1", "F2"])
+    std_path: Path = project_root() / "male_standard.parquet"
+    std_df: pl.DataFrame = pl.read_parquet(std_path).drop_nulls(subset=["F1", "F2"])
     ref_layer: alt.Chart = (
         alt.Chart(std_df)
         .mark_text(color="#c0c0c0", fontSize=11, fontWeight="bold")

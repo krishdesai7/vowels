@@ -1,4 +1,4 @@
-from enum import StrEnum, auto
+from enum import StrEnum
 from typing import Final
 
 
@@ -52,12 +52,12 @@ DIPHTHONGS: Final[set[Wells]] = {
 
 
 class Gender(StrEnum):
-    M = auto()
-    F = auto()
-    C = auto()
+    M = "Male"
+    F = "Female"
+    C = "Child"
 
 
 class Mode(StrEnum):
-    MONO = auto()
-    DIPH = auto()
-    ALL = auto()
+    MONO = "Monophthongs only"
+    DIPH = "Diphthongs only"
+    ALL = "All vowels"

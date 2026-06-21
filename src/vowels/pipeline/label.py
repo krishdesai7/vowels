@@ -4,7 +4,7 @@ from pathlib import Path
 
 import parselmouth
 
-from .. import project_root, session_dir
+from ..paths import project_root, session_dir
 
 
 def label_textgrid(session: str, labels_file: str | None = None) -> None:

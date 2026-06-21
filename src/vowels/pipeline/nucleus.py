@@ -4,7 +4,8 @@ from typing import Final, Literal
 
 import parselmouth
 
-from .. import DIPHTHONGS, Mode, Wells, session_dir
+from ..paths import session_dir
+from ..schema import DIPHTHONGS, Mode, Wells
 
 DISYLLABLE_PREFIX: Final[Literal["2"]] = "2"
 CONSONANT_WEIGHT: Final[float] = 1.0

@@ -4,7 +4,8 @@ from pathlib import Path
 import parselmouth
 import polars as pl
 
-from .. import Gender, session_dir
+from ..paths import session_dir
+from ..schema import Gender
 
 parse_labels: Callable[[pl.DataFrame], pl.DataFrame] = lambda df: (  # noqa: E731
     df.with_columns(pl.col("label").str.split_exact("_", 1).alias("parts"))

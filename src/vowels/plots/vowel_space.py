@@ -3,7 +3,8 @@ from pathlib import Path
 import altair as alt
 import polars as pl
 
-from .. import Mode, Wells, project_root, session_dir
+from ..paths import project_root, session_dir
+from ..schema import Mode, Wells
 from . import precompute_ellipse
 
 

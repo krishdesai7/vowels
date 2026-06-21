@@ -2,7 +2,7 @@ from pathlib import Path
 
 import parselmouth
 
-from .. import session_dir
+from ..paths import session_dir
 
 
 def detect_silences(

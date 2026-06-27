@@ -19,15 +19,21 @@ app = typer.Typer(no_args_is_help=True, help="Vowel formant analysis toolkit.")
 def silences(
     session: str,
     min_sounding_interval: Annotated[
-        float, typer.Option(help="Minimum sounding interval (s)")
+        float,
+        typer.Option(
+            "--min-sounding-interval", "-s", help="Minimum sounding interval (s)"
+        ),
     ] = 0.1,
     min_silent_interval: Annotated[
-        float, typer.Option(help="Minimum silent interval (s)")
+        float,
+        typer.Option("--min-silent-interval", "-i", help="Minimum silent interval (s)"),
     ] = 0.1,
     silence_threshold: Annotated[
-        float, typer.Option(help="Silence threshold (dB)")
+        float, typer.Option("--silence-threshold", "-t", help="Silence threshold (dB)")
     ] = -25.0,
-    min_pitch: Annotated[float, typer.Option(help="Minimum pitch (Hz)")] = 100.0,
+    min_pitch: Annotated[
+        float, typer.Option("--min-pitch", "-p", help="Minimum pitch (Hz)")
+    ] = 100.0,
 ) -> None:
     """Detect silences in a session WAV and write a TextGrid."""
     detect_silences(
@@ -42,7 +48,9 @@ def silences(
 @app.command()
 def label(
     session: str,
-    labels_file: Annotated[str | None, typer.Option(help="Path to labels.txt")] = None,
+    labels_file: Annotated[
+        str | None, typer.Option("--labels-file", "-f", help="Path to labels.txt")
+    ] = None,
 ) -> None:
     """Label sounding intervals in the TextGrid from labels.txt."""
 
@@ -55,7 +63,10 @@ def nucleus(
     mode: Annotated[
         Mode,
         typer.Option(
+            "--mode",
+            "-m",
             help="Mode (mono/diph/all)",
+            case_sensitive=False,
         ),
     ] = Mode.MONO,
 ) -> None:
@@ -66,7 +77,15 @@ def nucleus(
 @app.command()
 def formants(
     session: str,
-    gender: Annotated[Gender, typer.Option(help="Speaker gender (M/F/C)")] = Gender.M,
+    gender: Annotated[
+        Gender,
+        typer.Option(
+            "--gender",
+            "-g",
+            help="Speaker gender (M/F/C)",
+            case_sensitive=False,
+        ),
+    ] = Gender.M,
 ) -> None:
     """Extract F1/F2/F3 at nucleus points and write formants CSV."""
     extract_formants(session, gender)
@@ -75,7 +94,15 @@ def formants(
 @app.command()
 def plot(
     session: str,
-    mode: Annotated[Mode, typer.Option(help="Mode (mono/diph/all)")] = Mode.MONO,
+    mode: Annotated[
+        Mode,
+        typer.Option(
+            "--mode",
+            "-m",
+            help="Mode (mono/diph/all)",
+            case_sensitive=False,
+        ),
+    ] = Mode.MONO,
 ) -> None:
     """Generate interactive vowel space HTML from existing formants CSV."""
     save_chart(session, mode)
@@ -84,10 +111,29 @@ def plot(
 @app.command()
 def run(
     session: str,
-    gender: Annotated[Gender, typer.Option(help="Speaker gender (M/F/C)")] = Gender.M,
-    mode: Annotated[Mode, typer.Option(help="Mode (mono/diph/all)")] = Mode.MONO,
+    gender: Annotated[
+        Gender,
+        typer.Option(
+            "--gender",
+            "-g",
+            help="Speaker gender (M/F/C)",
+            case_sensitive=False,
+        ),
+    ] = Gender.M,
+    mode: Annotated[
+        Mode,
+        typer.Option(
+            "--mode",
+            "-m",
+            help="Mode (mono/diph/all)",
+            case_sensitive=False,
+        ),
+    ] = Mode.MONO,
     min_sounding_interval: Annotated[
-        float, typer.Option(help="Minimum sounding interval (s)")
+        float,
+        typer.Option(
+            "--min-sounding-interval", "-s", help="Minimum sounding interval (s)"
+        ),
     ] = 0.12,
 ) -> None:
     """Run the full pipeline: silences → label → nucleus → formants → plot."""

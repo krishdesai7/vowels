@@ -45,7 +45,7 @@ Gender affects the formant ceiling used by Praat's Burg algorithm (M: 5000 Hz, F
 
 Place your session files under `sessions/<session>/`:
 
-```
+```text
 sessions/
   session1/
     session1.wav
@@ -53,7 +53,7 @@ sessions/
 
 Then create a `labels.txt` file at the project root listing one label per speech interval detected in the recording, in order:
 
-```
+```text
 FLEECE_bleed
 TRAP_cat
 STRUT_cup
@@ -66,15 +66,15 @@ GOOSE_food
 
 The lexical set must be one of the [Wells (1982)](https://en.wikipedia.org/wiki/Lexical_set) keywords supported by the toolkit:
 
-| Monophthongs | Diphthongs | Reduced |
-|---|---|---|
-| FLEECE, KIT, happY | FACE, GOAT | commA |
-| GOOSE, FOOT | PRICE, MOUTH | lettER |
-| DRESS | CHOICE | NURSE |
-| THOUGHT, CLOTH | NEAR, SQUARE, CURE | |
-| TRAP, BATH, PALM | | |
-| LOT, START, STRUT | | |
-| FORCE, NORTH | | |
+| Monophthongs       | Diphthongs         | Reduced |
+| ------------------ | ------------------ | ------- |
+| FLEECE, KIT, happY | FACE, GOAT         | commA   |
+| GOOSE, FOOT        | PRICE, MOUTH       | lettER  |
+| DRESS              | CHOICE             | NURSE   |
+| THOUGHT, CLOTH     | NEAR, SQUARE, CURE |         |
+| TRAP, BATH, PALM   |                    |         |
+| LOT, START, STRUT  |                    |         |
+| FORCE, NORTH       |                    |         |
 
 **Disyllabic words** (where the target vowel falls in the second syllable) are prefixed with `2`, e.g. `2HAPPY_coffee`, `2LETTER_butter`. The nucleus finder uses a weighted center calculation for the second syllable rather than the word midpoint.
 
@@ -106,7 +106,7 @@ uv run vowels plot <session> --mode mono
 
 ## CLI reference
 
-```
+```bash
 vowels run <session>       Run the full pipeline
 vowels silences <session>  Detect speech intervals
 vowels label <session>     Assign labels to intervals

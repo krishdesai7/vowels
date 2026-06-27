@@ -11,8 +11,7 @@ from . import precompute_ellipse
 def build_chart(
     session: str, mode: Mode = Mode.MONO
 ) -> alt.LayerChart | alt.FacetChart:
-    d: Path = session_dir(session)
-    df: pl.DataFrame = pl.read_csv(d / f"{session}_formants.csv")
+    df: pl.DataFrame = pl.read_csv(session_dir(session) / f"{session}_formants.csv")
 
     is_diph: pl.Expr = pl.col("label").str.contains(":")
     if mode == Mode.MONO:
@@ -161,7 +160,7 @@ def build_chart(
 
 
 def save_chart(session: str, mode: Mode = Mode.MONO) -> None:
-    d: Path = session_dir(session)
-    out_path: Path = d / f"{session}_vowel_space.html"
+    suffix: str = "" if mode == Mode.ALL else f"_{mode.value}"
+    out_path: Path = session_dir(session) / f"{session}_vowel_space{suffix}.html"
     build_chart(session, mode).save(str(out_path))
     print(f"Created {out_path}")

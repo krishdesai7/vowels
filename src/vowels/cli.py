@@ -91,7 +91,7 @@ def run(
     ] = 0.12,
 ) -> None:
     """Run the full pipeline: silences → label → nucleus → formants → plot."""
-    detect_silences(session, min_sounding_interval)
+    detect_silences(session, min_sounding_interval=min_sounding_interval)
     label_textgrid(session)
     make_nucleus_points(session, mode)
     extract_formants(session, gender)

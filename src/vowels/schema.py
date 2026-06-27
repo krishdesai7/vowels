@@ -6,7 +6,7 @@ class Wells(StrEnum):
     # High front - blue tones
     FLEECE = "#2166ac"
     KIT = "#67a9cf"
-    happY = "#92c5de"
+    HAPPY = "#92c5de"
     # High back - purple tones
     GOOSE = "#762a83"
     FOOT = "#9970ab"
@@ -34,8 +34,8 @@ class Wells(StrEnum):
     SQUARE = "#66c2a5"
     CURE = "#5ab4ac"
     # Reduced - gray tones
-    commA = "#636363"
-    lettER = "#969696"
+    COMMA = "#636363"
+    LETTER = "#969696"
     NURSE = "#525252"
 
 

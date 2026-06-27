@@ -4,7 +4,6 @@ import typer
 
 from . import (
     Gender,
-    Mode,
     detect_silences,
     extract_formants,
     label_textgrid,
@@ -23,7 +22,7 @@ def silences(
         typer.Option(
             "--min-sounding-interval", "-s", help="Minimum sounding interval (s)"
         ),
-    ] = 0.1,
+    ] = 0.08,
     min_silent_interval: Annotated[
         float,
         typer.Option("--min-silent-interval", "-i", help="Minimum silent interval (s)"),
@@ -58,20 +57,9 @@ def label(
 
 
 @app.command()
-def nucleus(
-    session: str,
-    mode: Annotated[
-        Mode,
-        typer.Option(
-            "--mode",
-            "-m",
-            help="Mode (mono/diph/all)",
-            case_sensitive=False,
-        ),
-    ] = Mode.MONO,
-) -> None:
+def nucleus(session: str) -> None:
     """Create nucleus point tier for formant extraction."""
-    make_nucleus_points(session, mode)
+    make_nucleus_points(session)
 
 
 @app.command()
@@ -92,20 +80,9 @@ def formants(
 
 
 @app.command()
-def plot(
-    session: str,
-    mode: Annotated[
-        Mode,
-        typer.Option(
-            "--mode",
-            "-m",
-            help="Mode (mono/diph/all)",
-            case_sensitive=False,
-        ),
-    ] = Mode.MONO,
-) -> None:
+def plot(session: str) -> None:
     """Generate interactive vowel space HTML from existing formants CSV."""
-    save_chart(session, mode)
+    save_chart(session)
 
 
 @app.command()
@@ -120,25 +97,16 @@ def run(
             case_sensitive=False,
         ),
     ] = Gender.M,
-    mode: Annotated[
-        Mode,
-        typer.Option(
-            "--mode",
-            "-m",
-            help="Mode (mono/diph/all)",
-            case_sensitive=False,
-        ),
-    ] = Mode.MONO,
     min_sounding_interval: Annotated[
         float,
         typer.Option(
             "--min-sounding-interval", "-s", help="Minimum sounding interval (s)"
         ),
-    ] = 0.12,
+    ] = 0.08,
 ) -> None:
     """Run the full pipeline: silences → label → nucleus → formants → plot."""
     detect_silences(session, min_sounding_interval=min_sounding_interval)
     label_textgrid(session)
-    make_nucleus_points(session, mode)
+    make_nucleus_points(session)
     extract_formants(session, gender)
-    save_chart(session, mode)
+    save_chart(session)

@@ -13,12 +13,11 @@ from .pipeline import (
     parse_labels,
 )
 from .plots import precompute_ellipse, save_chart
-from .schema import DIPHTHONGS, Gender, Mode, Wells
+from .schema import DIPHTHONGS, Gender, Wells
 
 __all__: Final[list[str]] = [
     "DIPHTHONGS",
     "Gender",
-    "Mode",
     "Wells",
     "project_root",
     "session_dir",

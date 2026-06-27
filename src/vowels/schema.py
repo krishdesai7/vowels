@@ -57,7 +57,3 @@ class Gender(StrEnum):
     C = auto()
 
 
-class Mode(StrEnum):
-    MONO = auto()
-    DIPH = auto()
-    ALL = auto()

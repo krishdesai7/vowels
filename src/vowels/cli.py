@@ -8,6 +8,7 @@ from . import (
     extract_formants,
     label_textgrid,
     make_nucleus_points,
+    save_bark_chart,
     save_chart,
 )
 
@@ -83,6 +84,12 @@ def formants(
 def plot(session: str) -> None:
     """Generate interactive vowel space HTML from existing formants CSV."""
     save_chart(session)
+
+
+@app.command()
+def bark(session: str) -> None:
+    """Generate interactive Bark Z vowel space HTML from existing formants CSV."""
+    save_bark_chart(session)
 
 
 @app.command()

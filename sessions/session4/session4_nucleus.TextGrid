@@ -813,301 +813,391 @@ item []:
         name = "nucleus" 
         xmin = 0 
         xmax = 109.52852607709751 
-        points: size = 99 
+        points: size = 129 
         points [1]:
-            number = 1.5082630385487508 
-            mark = "CURE_your" 
+            number = 1.422263038548751 
+            mark = "CURE_your:1" 
         points [2]:
-            number = 2.520263038548751 
-            mark = "GOAT_home" 
+            number = 1.5942630385487508 
+            mark = "CURE_your:2" 
         points [3]:
+            number = 2.4442630385487507 
+            mark = "GOAT_home:1" 
+        points [4]:
+            number = 2.596263038548751 
+            mark = "GOAT_home:2" 
+        points [5]:
             number = 3.4682630385487507 
             mark = "DRESS_dress" 
-        points [4]:
+        points [6]:
             number = 4.606929705215418 
             mark = "2COMMA_comma" 
-        points [5]:
+        points [7]:
             number = 5.673596371882084 
             mark = "2HAPPY_coffee" 
-        points [6]:
-            number = 6.608263038548751 
-            mark = "PRICE_try" 
-        points [7]:
+        points [8]:
+            number = 6.540263038548751 
+            mark = "PRICE_try:1" 
+        points [9]:
+            number = 6.6762630385487505 
+            mark = "PRICE_try:2" 
+        points [10]:
             number = 7.604263038548751 
             mark = "START_start" 
-        points [8]:
+        points [11]:
             number = 8.680263038548752 
             mark = "FORCE_door" 
-        points [9]:
+        points [12]:
             number = 9.904263038548752 
             mark = "TRAP_bad" 
-        points [10]:
-            number = 11.008263038548751 
-            mark = "CURE_cure" 
-        points [11]:
+        points [13]:
+            number = 10.94026303854875 
+            mark = "CURE_cure:1" 
+        points [14]:
+            number = 11.07626303854875 
+            mark = "CURE_cure:2" 
+        points [15]:
             number = 12.032263038548752 
             mark = "KIT_ship" 
-        points [12]:
-            number = 13.11226303854875 
-            mark = "CHOICE_coin" 
-        points [13]:
-            number = 14.16426303854875 
-            mark = "FACE_day" 
-        points [14]:
+        points [16]:
+            number = 13.03226303854875 
+            mark = "CHOICE_coin:1" 
+        points [17]:
+            number = 13.19226303854875 
+            mark = "CHOICE_coin:2" 
+        points [18]:
+            number = 14.10626303854875 
+            mark = "FACE_day:1" 
+        points [19]:
+            number = 14.222263038548752 
+            mark = "FACE_day:2" 
+        points [20]:
             number = 15.20826303854875 
             mark = "KIT_kit" 
-        points [15]:
+        points [21]:
             number = 16.26026303854875 
             mark = "BATH_dance" 
-        points [16]:
-            number = 17.264263038548748 
-            mark = "MOUTH_mouth" 
-        points [17]:
-            number = 18.45226303854875 
-            mark = "CURE_sure" 
-        points [18]:
+        points [22]:
+            number = 17.20826303854875 
+            mark = "MOUTH_mouth:1" 
+        points [23]:
+            number = 17.32026303854875 
+            mark = "MOUTH_mouth:2" 
+        points [24]:
+            number = 18.39826303854875 
+            mark = "CURE_sure:1" 
+        points [25]:
+            number = 18.506263038548752 
+            mark = "CURE_sure:2" 
+        points [26]:
             number = 19.532263038548752 
             mark = "NURSE_term" 
-        points [19]:
-            number = 20.56826303854875 
-            mark = "PRICE_price" 
-        points [20]:
-            number = 21.704263038548753 
-            mark = "CHOICE_join" 
-        points [21]:
+        points [27]:
+            number = 20.524263038548753 
+            mark = "PRICE_price:1" 
+        points [28]:
+            number = 20.61226303854875 
+            mark = "PRICE_price:2" 
+        points [29]:
+            number = 21.63226303854875 
+            mark = "CHOICE_join:1" 
+        points [30]:
+            number = 21.776263038548752 
+            mark = "CHOICE_join:2" 
+        points [31]:
             number = 22.832263038548753 
             mark = "FLEECE_bleed" 
-        points [22]:
+        points [32]:
             number = 23.84826303854875 
             mark = "DRESS_wet" 
-        points [23]:
+        points [33]:
             number = 25.012263038548753 
             mark = "LOT_dot" 
-        points [24]:
-            number = 26.10426303854875 
-            mark = "NEAR_fear" 
-        points [25]:
+        points [34]:
+            number = 26.064263038548752 
+            mark = "NEAR_fear:1" 
+        points [35]:
+            number = 26.14426303854875 
+            mark = "NEAR_fear:2" 
+        points [36]:
             number = 27.048263038548754 
             mark = "STRUT_cup" 
-        points [26]:
+        points [37]:
             number = 28.148263038548752 
             mark = "TRAP_tap" 
-        points [27]:
-            number = 29.19626303854875 
-            mark = "FACE_bait" 
-        points [28]:
+        points [38]:
+            number = 29.15026303854875 
+            mark = "FACE_bait:1" 
+        points [39]:
+            number = 29.242263038548753 
+            mark = "FACE_bait:2" 
+        points [40]:
             number = 30.30026303854875 
             mark = "START_far" 
-        points [29]:
+        points [41]:
             number = 31.39226303854875 
             mark = "TRAP_cat" 
-        points [30]:
+        points [42]:
             number = 32.52292970521542 
             mark = "2LETTER_letter" 
-        points [31]:
+        points [43]:
             number = 33.47626303854875 
             mark = "FOOT_put" 
-        points [32]:
+        points [44]:
             number = 34.548263038548754 
             mark = "NORTH_war" 
-        points [33]:
+        points [45]:
             number = 35.53226303854875 
             mark = "LOT_got" 
-        points [34]:
+        points [46]:
             number = 36.59226303854875 
             mark = "NURSE_hurt" 
-        points [35]:
-            number = 37.70426303854875 
-            mark = "NEAR_here" 
-        points [36]:
+        points [47]:
+            number = 37.66026303854875 
+            mark = "NEAR_here:1" 
+        points [48]:
+            number = 37.74826303854876 
+            mark = "NEAR_here:2" 
+        points [49]:
             number = 38.76026303854875 
             mark = "NORTH_north" 
-        points [37]:
-            number = 39.85626303854875 
-            mark = "CHOICE_choice" 
-        points [38]:
-            number = 40.90426303854875 
-            mark = "FACE_face" 
-        points [39]:
-            number = 42.03226303854875 
-            mark = "SQUARE_care" 
-        points [40]:
+        points [50]:
+            number = 39.81626303854875 
+            mark = "CHOICE_choice:1" 
+        points [51]:
+            number = 39.89626303854875 
+            mark = "CHOICE_choice:2" 
+        points [52]:
+            number = 40.86026303854875 
+            mark = "FACE_face:1" 
+        points [53]:
+            number = 40.94826303854875 
+            mark = "FACE_face:2" 
+        points [54]:
+            number = 41.98026303854875 
+            mark = "SQUARE_care:1" 
+        points [55]:
+            number = 42.084263038548755 
+            mark = "SQUARE_care:2" 
+        points [56]:
             number = 43.13626303854875 
             mark = "STRUT_trunk" 
-        points [41]:
-            number = 44.27226303854875 
-            mark = "MOUTH_out" 
-        points [42]:
+        points [57]:
+            number = 44.22826303854875 
+            mark = "MOUTH_out:1" 
+        points [58]:
+            number = 44.316263038548755 
+            mark = "MOUTH_out:2" 
+        points [59]:
             number = 45.49226303854876 
             mark = "2COMMA_quota" 
-        points [43]:
-            number = 46.46426303854875 
-            mark = "SQUARE_air" 
-        points [44]:
+        points [60]:
+            number = 46.40026303854875 
+            mark = "SQUARE_air:1" 
+        points [61]:
+            number = 46.52826303854875 
+            mark = "SQUARE_air:2" 
+        points [62]:
             number = 47.58026303854875 
             mark = "NORTH_born" 
-        points [45]:
+        points [63]:
             number = 48.53226303854875 
             mark = "START_heart" 
-        points [46]:
+        points [64]:
             number = 49.63226303854875 
             mark = "PALM_spa" 
-        points [47]:
+        points [65]:
             number = 50.90426303854875 
             mark = "NORTH_storm" 
-        points [48]:
+        points [66]:
             number = 51.88826303854876 
             mark = "TRAP_trap" 
-        points [49]:
+        points [67]:
             number = 52.94026303854875 
             mark = "FOOT_foot" 
-        points [50]:
+        points [68]:
             number = 54.04426303854875 
             mark = "STRUT_strut" 
-        points [51]:
+        points [69]:
             number = 55.349596371882086 
             mark = "2LETTER_butter" 
-        points [52]:
+        points [70]:
             number = 56.292263038548754 
             mark = "FLEECE_beat" 
-        points [53]:
+        points [71]:
             number = 57.38826303854875 
             mark = "FLEECE_speak" 
-        points [54]:
-            number = 58.45226303854875 
-            mark = "PRICE_hide" 
-        points [55]:
-            number = 59.52426303854875 
-            mark = "PRICE_buy" 
-        points [56]:
-            number = 60.59226303854875 
-            mark = "SQUARE_fair" 
-        points [57]:
+        points [72]:
+            number = 58.39426303854875 
+            mark = "PRICE_hide:1" 
+        points [73]:
+            number = 58.51026303854875 
+            mark = "PRICE_hide:2" 
+        points [74]:
+            number = 59.44626303854875 
+            mark = "PRICE_buy:1" 
+        points [75]:
+            number = 59.602263038548756 
+            mark = "PRICE_buy:2" 
+        points [76]:
+            number = 60.532263038548756 
+            mark = "SQUARE_fair:1" 
+        points [77]:
+            number = 60.65226303854875 
+            mark = "SQUARE_fair:2" 
+        points [78]:
             number = 61.58826303854875 
             mark = "THOUGHT_taught" 
-        points [58]:
+        points [79]:
             number = 62.68426303854875 
             mark = "THOUGHT_jaw" 
-        points [59]:
+        points [80]:
             number = 63.69626303854875 
             mark = "NURSE_nurse" 
-        points [60]:
+        points [81]:
             number = 64.76426303854876 
             mark = "THOUGHT_caught" 
-        points [61]:
+        points [82]:
             number = 65.78026303854875 
             mark = "LOT_lot" 
-        points [62]:
+        points [83]:
             number = 67.18426303854875 
             mark = "DRESS_step" 
-        points [63]:
-            number = 68.18826303854874 
-            mark = "NEAR_near" 
-        points [64]:
+        points [84]:
+            number = 68.12226303854875 
+            mark = "NEAR_near:1" 
+        points [85]:
+            number = 68.25426303854874 
+            mark = "NEAR_near:2" 
+        points [86]:
             number = 69.37626303854876 
             mark = "GOOSE_tooth" 
-        points [65]:
+        points [87]:
             number = 70.39626303854874 
             mark = "LOT_stop" 
-        points [66]:
+        points [88]:
             number = 71.56026303854875 
             mark = "PALM_psalm" 
-        points [67]:
+        points [89]:
             number = 72.74692970521542 
             mark = "2LETTER_paper" 
-        points [68]:
+        points [90]:
             number = 73.58426303854876 
             mark = "KIT_sit" 
-        points [69]:
+        points [91]:
             number = 74.71226303854876 
             mark = "FLEECE_feel" 
-        points [70]:
+        points [92]:
             number = 75.80426303854875 
             mark = "GOOSE_goose" 
-        points [71]:
+        points [93]:
             number = 76.86026303854875 
             mark = "NURSE_work" 
-        points [72]:
+        points [94]:
             number = 77.93626303854876 
             mark = "FOOT_book" 
-        points [73]:
-            number = 79.11626303854875 
-            mark = "CHOICE_boy" 
-        points [74]:
-            number = 80.21626303854876 
-            mark = "GOAT_boat" 
-        points [75]:
+        points [95]:
+            number = 79.03826303854875 
+            mark = "CHOICE_boy:1" 
+        points [96]:
+            number = 79.19426303854875 
+            mark = "CHOICE_boy:2" 
+        points [97]:
+            number = 80.16426303854875 
+            mark = "GOAT_boat:1" 
+        points [98]:
+            number = 80.26826303854875 
+            mark = "GOAT_boat:2" 
+        points [99]:
             number = 81.31226303854876 
             mark = "CLOTH_boss" 
-        points [76]:
+        points [100]:
             number = 82.64292970521542 
             mark = "2COMMA_sofa" 
-        points [77]:
+        points [101]:
             number = 83.47626303854875 
             mark = "FORCE_force" 
-        points [78]:
-            number = 84.50826303854875 
-            mark = "GOAT_know" 
-        points [79]:
+        points [102]:
+            number = 84.42626303854874 
+            mark = "GOAT_know:1" 
+        points [103]:
+            number = 84.59026303854876 
+            mark = "GOAT_know:2" 
+        points [104]:
             number = 85.62426303854875 
             mark = "2HAPPY_city" 
-        points [80]:
-            number = 86.58826303854875 
-            mark = "NEAR_beer" 
-        points [81]:
-            number = 87.67626303854875 
-            mark = "MOUTH_cow" 
-        points [82]:
+        points [105]:
+            number = 86.51426303854875 
+            mark = "NEAR_beer:1" 
+        points [106]:
+            number = 86.66226303854876 
+            mark = "NEAR_beer:2" 
+        points [107]:
+            number = 87.60626303854875 
+            mark = "MOUTH_cow:1" 
+        points [108]:
+            number = 87.74626303854876 
+            mark = "MOUTH_cow:2" 
+        points [109]:
             number = 88.71226303854876 
             mark = "PALM_palm" 
-        points [83]:
+        points [110]:
             number = 89.64426303854876 
             mark = "CLOTH_cloth" 
-        points [84]:
+        points [111]:
             number = 90.72426303854874 
             mark = "FLEECE_bleed" 
-        points [85]:
+        points [112]:
             number = 91.75226303854876 
             mark = "CLOTH_cross" 
-        points [86]:
+        points [113]:
             number = 92.98426303854876 
             mark = "2HAPPY_happy" 
-        points [87]:
+        points [114]:
             number = 93.85626303854875 
             mark = "GOOSE_food" 
-        points [88]:
+        points [115]:
             number = 94.94026303854875 
             mark = "DRESS_bed" 
-        points [89]:
+        points [116]:
             number = 96.10426303854877 
             mark = "FLEECE_fleece" 
-        points [90]:
-            number = 97.24026303854876 
-            mark = "GOAT_goat" 
-        points [91]:
+        points [117]:
+            number = 97.19626303854875 
+            mark = "GOAT_goat:1" 
+        points [118]:
+            number = 97.28426303854876 
+            mark = "GOAT_goat:2" 
+        points [119]:
             number = 98.28826303854876 
             mark = "THOUGHT_thought" 
-        points [92]:
+        points [120]:
             number = 99.36026303854875 
             mark = "BATH_bath" 
-        points [93]:
-            number = 100.58826303854875 
-            mark = "SQUARE_square" 
-        points [94]:
+        points [121]:
+            number = 100.53026303854875 
+            mark = "SQUARE_square:1" 
+        points [122]:
+            number = 100.64626303854875 
+            mark = "SQUARE_square:2" 
+        points [123]:
             number = 101.58426303854876 
             mark = "BATH_path" 
-        points [95]:
-            number = 102.68026303854876 
-            mark = "CURE_pure" 
-        points [96]:
+        points [124]:
+            number = 102.62026303854876 
+            mark = "CURE_pure:1" 
+        points [125]:
+            number = 102.74026303854875 
+            mark = "CURE_pure:2" 
+        points [126]:
             number = 103.70826303854875 
             mark = "FOOT_good" 
-        points [97]:
+        points [127]:
             number = 104.74026303854876 
             mark = "KIT_bit" 
-        points [98]:
+        points [128]:
             number = 105.85226303854876 
             mark = "FORCE_porch" 
-        points [99]:
+        points [129]:
             number = 106.88826303854876 
             mark = "PALM_calm" 

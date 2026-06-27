@@ -12,7 +12,7 @@ from .pipeline import (
     nucleus_time,
     parse_labels,
 )
-from .plots import precompute_ellipse, save_chart
+from .plots import precompute_ellipse, save_bark_chart, save_chart
 from .schema import DIPHTHONGS, Gender, Wells
 
 __all__: Final[list[str]] = [
@@ -33,4 +33,5 @@ __all__: Final[list[str]] = [
     "nucleus_time",
     "precompute_ellipse",
     "save_chart",
+    "save_bark_chart",
 ]

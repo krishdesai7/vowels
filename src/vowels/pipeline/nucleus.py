@@ -5,7 +5,7 @@ from typing import Final, Literal
 import parselmouth
 
 from ..paths import session_dir
-from ..schema import DIPHTHONGS, Wells
+from ..schema import DIPHTHONGS
 
 DISYLLABLE_PREFIX: Final[Literal["2"]] = "2"
 CONSONANT_WEIGHT: Final[float] = 1.0
@@ -41,12 +41,13 @@ def normalize_label(label: str) -> tuple[str, bool]:
     return label, False
 
 
+_DIPHTHONG_NAMES: frozenset[str] = frozenset(w.name for w in DIPHTHONGS)
+
+
 def make_nucleus_points(session: str) -> None:
     d: Path = session_dir(session)
     in_tg: Path = d / f"{session}_labeled.TextGrid"
     out_tg: Path = d / f"{session}_nucleus.TextGrid"
-
-    active_diphthongs: set[Wells] = DIPHTHONGS
 
     labeled_tier: int = 1
     tg: parselmouth.TextGrid = parselmouth.read(in_tg.as_posix())
@@ -82,7 +83,7 @@ def make_nucleus_points(session: str) -> None:
             )
             continue
 
-        if set_name in active_diphthongs:
+        if set_name in _DIPHTHONG_NAMES:
             t_on, t_off = diphthong_times(t1, t2)
             parselmouth.praat.call(tg, "Insert point", nucleus_tier, t_on, f"{label}:1")
             parselmouth.praat.call(

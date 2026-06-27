@@ -10,7 +10,8 @@ import typer
 def formant_midpoints(i: int) -> pl.Expr:
     col: pl.Expr = pl.col(f"F{i} Hz")
     return (
-        col.str.replace_all(r"\s+", "")
+        col.cast(pl.Utf8)
+        .str.replace_all(r"\s+", "")
         .str.split("-")
         .list.eval(pl.element().cast(pl.UInt16))
         .list.mean()
@@ -78,18 +79,21 @@ def main(
     output_file: Path = resolve_output_file(output, input_file)
     (
         scan(input_file)
-        .with_columns(formant_midpoints(i) for i in range(1, 4))
-        .with_columns(bark_normalize(i) for i in range(1, 4))
+        .with_columns(formant_midpoints(i) for i in range(0, 4))
+        .with_columns(bark_normalize(i) for i in range(0, 4))
         .with_columns(
+            Closeness=pl.col.Z1 - pl.col.Z0,
             Frontness=pl.col.Z2 - pl.col.Z1,
             Roundness=pl.col.Z3 - pl.col.Z2,
         )
         .select(
             "label",
             "category",
+            "F0",
             "F1",
             "F2",
             "F3",
+            "Closeness",
             "Frontness",
             "Roundness",
         )

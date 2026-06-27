@@ -117,3 +117,4 @@ def run(
     make_nucleus_points(session)
     extract_formants(session, gender)
     save_chart(session)
+    save_bark_chart(session)

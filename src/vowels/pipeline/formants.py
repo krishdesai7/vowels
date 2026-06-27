@@ -33,6 +33,8 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
 
     formant_ceiling: int = 5000 if gender == Gender.M else 5500
     window_length: float = 0.025 if gender == Gender.M else 0.030
+    pitch_floor: int = 75 if gender == Gender.M else 100
+    pitch_ceiling: int = 300 if gender == Gender.M else 500
 
     sound: parselmouth.Sound = parselmouth.Sound(wav_path.as_posix())
     tg: parselmouth.TextGrid = parselmouth.read(tg_path.as_posix())
@@ -55,6 +57,9 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
     formant_obj: parselmouth.Formant = parselmouth.praat.call(
         sound, "To Formant (burg)", 0.0, 5, formant_ceiling, window_length, 50
     )
+    pitch_obj: parselmouth.Pitch = parselmouth.praat.call(
+        sound, "To Pitch", 0.0, pitch_floor, pitch_ceiling
+    )
     records: list[dict[str, float | str]] = []
     for i in range(1, n_points + 1):
         time: float = parselmouth.praat.call(tg, "Get time of point", tier_index, i)
@@ -63,6 +68,9 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
         )
         if not label:
             continue
+        f0: float = parselmouth.praat.call(
+            pitch_obj, "Get value at time", time, "Hertz", "Linear"
+        )
         f1: float = parselmouth.praat.call(
             formant_obj, "Get value at time", 1, time, "Hertz", "Linear"
         )
@@ -72,7 +80,7 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
         f3: float = parselmouth.praat.call(
             formant_obj, "Get value at time", 3, time, "Hertz", "Linear"
         )
-        records.append({"time": time, "label": label, "F1": f1, "F2": f2, "F3": f3})
+        records.append({"time": time, "label": label, "F0": f0, "F1": f1, "F2": f2, "F3": f3})
 
     df: pl.DataFrame = pl.DataFrame(records)
     df = parse_labels(df)

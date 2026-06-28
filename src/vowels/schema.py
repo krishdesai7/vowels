@@ -3,41 +3,68 @@ from typing import Final
 
 
 class Wells(StrEnum):
-    # High front - blue tones
-    FLEECE = "#2166ac"
-    KIT = "#67a9cf"
-    HAPPY = "#92c5de"
-    # High back - purple tones
-    GOOSE = "#762a83"
-    FOOT = "#9970ab"
-    # Mid front - green tones
-    FACE = "#1b7837"
-    DRESS = "#5aae61"
-    # Mid back - orange/brown tones
-    GOAT = "#d95f02"
-    THOUGHT = "#e6ab02"
-    FORCE = "#b35806"
-    NORTH = "#d8b365"
-    CLOTH = "#bf812d"
-    # Low vowels - red tones
-    TRAP = "#b2182b"
-    BATH = "#d6604d"
-    PALM = "#c51b7d"
-    LOT = "#e08214"
-    START = "#f46d43"
-    STRUT = "#fdae61"
-    # Diphthongs - teal/cyan
-    PRICE = "#01665e"
-    MOUTH = "#35978f"
-    CHOICE = "#80cdc1"
-    NEAR = "#018571"
-    SQUARE = "#66c2a5"
-    CURE = "#5ab4ac"
-    # Reduced - gray tones
-    COMMA = "#636363"
-    LETTER = "#969696"
-    NURSE = "#525252"
+    # --- MONOPHTHONGS ---
+    # Distributed across a full 21-color qualitative spectrum
 
+    # High Front (High Contrast)
+    FLEECE = "#d62728"  # Red
+    KIT = "#1f77b4"  # Blue
+    HAPPY = "#7b4173"  # Dark Purple
+
+    # Mid Front
+    FACE = "#2ca02c"  # Green
+    DRESS = "#ff7f0e"  # Orange
+
+    # Low Front/Central
+    TRAP = "#9467bd"  # Purple
+    BATH = "#8c564b"  # Brown
+    PALM = "#e377c2"  # Pink
+
+    # Low Back (Max contrast for cot/caught)
+    LOT = "#17becf"  # Cyan
+    THOUGHT = "#bcbd22"  # Olive
+    CLOTH = "#f7b6d2"  # Light Pink
+
+    # Mid/High Back
+    FOOT = "#9edae5"  # Light Blue
+    GOOSE = "#c5b0d5"  # Light Purple
+    GOAT = "#c49c94"  # Light Brown
+
+    # Central
+    STRUT = "#ffbb78"  # Light Orange
+    START = "#7f7f7f"  # Grey
+
+    # R-Colored (Max contrast for horse/hoarse)
+    NORTH = "#dbdb8d"  # Khaki
+    FORCE = "#393b79"  # Dark Blue
+
+    # Schwa/Reduced
+    NURSE = "#637939"  # Dark Green
+    COMMA = "#8c6d31"  # Dark Yellow
+    LETTER = "#843c39"  # Dark Red
+
+    # --- DIPHTHONGS ---
+    # Distributed across a distinct 6-color spectrum
+
+    PRICE = "#e41a1c"  # Crimson
+    MOUTH = "#377eb8"  # Cobalt
+    CHOICE = "#4daf4a"  # Emerald
+    NEAR = "#984ea3"  # Amethyst
+    SQUARE = "#ff7f00"  # Tangerine
+    CURE = "#e6ab02"  # Goldenrod
+
+
+GROUPS: Final[dict[str, list[str]]] = {
+    "High Front":        ["FLEECE", "KIT", "HAPPY"],
+    "Mid Front":         ["DRESS"],
+    "Low Front/Central": ["TRAP", "BATH", "PALM"],
+    "Low Back":          ["LOT", "THOUGHT", "CLOTH"],
+    "Mid/High Back":     ["FOOT", "GOOSE"],
+    "Central":           ["STRUT", "START"],
+    "R-Colored":         ["NORTH", "FORCE"],
+    "Schwa/Reduced":     ["NURSE", "COMMA", "LETTER"],
+    "Diphthongs":        ["FACE", "GOAT", "PRICE", "CHOICE", "MOUTH", "NEAR", "SQUARE", "CURE"],
+}
 
 DIPHTHONGS: Final[set[Wells]] = {
     Wells.FACE,
@@ -55,5 +82,3 @@ class Gender(StrEnum):
     M = auto()
     F = auto()
     C = auto()
-
-

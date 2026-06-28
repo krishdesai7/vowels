@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 import altair as alt
@@ -5,9 +6,9 @@ import plotly.graph_objects as go
 import polars as pl
 
 from ..paths import project_root, session_dir
-from ..schema import Wells
+from ..schema import GROUPS, Wells
 from .ellipse import precompute_ellipse
-from .vowel_space import _inject_controls, _text_color
+from .vowel_space import _DIPH_NAMES, _inject_controls, _text_color
 
 DIV_ID = "bark-plot"
 
@@ -24,6 +25,30 @@ def _add_bark_dims(df: pl.DataFrame) -> pl.DataFrame:
         (pl.col("Z2") - pl.col("Z1")).alias("Frontness"),
         (pl.col("Z3") - pl.col("Z2")).alias("Roundness"),
     )
+
+
+def _proj_angles(
+    joined: pl.DataFrame,
+    x_col: str,
+    y_col: str,
+    x_rng: float,
+    y_rng: float,
+    x_rev: bool,
+    y_rev: bool,
+) -> list[float]:
+    """Return arrowhead angles (degrees CW from North, VL convention) for each endpoint row."""
+    # screen_dx: positive = right; reversed x axis inverts sign
+    # screen_dy in SVG (y increases downward): reversed y axis → positive data Δ moves DOWN
+    # VL angle = atan2(screen_dx, -screen_dy_svg) = atan2(screen_dx, screen_dy_upward)
+    x_sign = -1.0 if x_rev else 1.0
+    # reversed y → higher value moves down → screen_dy_upward = -Δy; non-reversed → +Δy
+    y_sign_up = -1.0 if y_rev else 1.0
+    angles: list[float] = []
+    for row in joined.iter_rows(named=True):
+        dx = row[x_col] - row[f"{x_col}_s"]
+        dy = row[y_col] - row[f"{y_col}_s"]
+        angles.append(math.degrees(math.atan2(x_sign * dx / x_rng, y_sign_up * dy / y_rng)))
+    return angles
 
 
 def build_bark_chart(session: str) -> go.Figure:
@@ -235,7 +260,21 @@ def _inject_bark_controls(
     type_html = btn("showMono", "Monophthongs")
     if has_diph:
         type_html += btn("showDiph", "Diphthongs")
-    set_html = "".join(set_btn(s, c) for s, c in set_colors.items())
+
+    groups_with_data = [
+        (grp_name, "".join(set_btn(s, set_colors[s]) for s in grp_sets if s in set_colors))
+        for grp_name, grp_sets in GROUPS.items()
+    ]
+    groups_with_data = [(g, b) for g, b in groups_with_data if b]
+    mid = (len(groups_with_data) + 1) // 2
+    col1_html = "".join(f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[:mid])
+    col2_html = "".join(f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[mid:])
+    set_grid = (
+        '<div class="vt-set-cols">'
+        '<div class="vt-set-col">' + col1_html + '</div>'
+        '<div class="vt-set-col">' + col2_html + '</div>'
+        '</div>'
+    )
 
     sidebar = (
         '<div id="vt-controls">'
@@ -250,9 +289,8 @@ def _inject_bark_controls(
         '<div class="vt-section">'
         '<div class="vt-label">Lexical sets</div>'
         '<button class="vt-btn active" id="vt-all-btn">All</button>'
-        '<div class="vt-set-grid">'
-        + set_html
-        + "</div></div>"
+        + set_grid
+        + "</div>"
         "</div>"
     )
 
@@ -261,7 +299,7 @@ def _inject_bark_controls(
         "body{display:flex;align-items:flex-start;gap:20px;"
         "padding:12px;margin:0;box-sizing:border-box;}"
         "#vt-controls+div{flex:1;min-width:0;}"
-        "#vt-controls{width:160px;flex-shrink:0;font-family:sans-serif;padding-top:8px;}"
+        "#vt-controls{width:185px;flex-shrink:0;font-family:sans-serif;padding-top:8px;}"
         ".vt-section{margin-bottom:14px;}"
         ".vt-label{font-size:10px;font-weight:bold;color:#aaa;"
         "text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}"
@@ -271,8 +309,12 @@ def _inject_bark_controls(
         "text-align:center;box-sizing:border-box;"
         "transition:background .15s,color .15s;}"
         ".vt-btn:not(.active){background:#c8d8e8;color:#5a7a99;}"
-        ".vt-set-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}"
-        ".vt-set-btn{padding:4px 4px;border:none;border-radius:4px;font-size:11px;"
+        ".vt-set-cols{display:flex;gap:4px;}"
+        ".vt-set-col{flex:1;display:flex;flex-direction:column;gap:4px;}"
+        ".vt-group-hdr{font-size:8px;color:#bbb;text-transform:uppercase;"
+        "letter-spacing:.04em;margin-top:6px;margin-bottom:1px;}"
+        ".vt-set-col>:first-child.vt-group-hdr{margin-top:0;}"
+        ".vt-set-btn{padding:4px 2px;border:none;border-radius:4px;font-size:11px;"
         "font-weight:bold;cursor:pointer;text-align:center;transition:opacity .15s;}"
         ".vt-set-btn:not(.active){opacity:0.25;}"
         "</style>"
@@ -486,30 +528,100 @@ def _projection_chart(
             .agg(pl.col(x_col).mean(), pl.col(y_col).mean())
             .sort(["set", "point_num"])
         )
+
+        x_rev = _AXIS_REVERSED[x_col]
+        y_rev = _AXIS_REVERSED[y_col]
+        x_rng = float((mono_df[x_col].max() - mono_df[x_col].min()) or 1.0)
+        y_rng = float((mono_df[y_col].max() - mono_df[y_col].min()) or 1.0)
+
+        pt1_t = diph_df.filter(pl.col("point_num") == 1)[["token", "set", x_col, y_col]].rename({x_col: f"{x_col}_s", y_col: f"{y_col}_s"})
+        pt2_t = diph_df.filter(pl.col("point_num") == 2)[["token", "set", x_col, y_col, "word"]]
+        tok_arr = pt2_t.join(pt1_t, on=["token", "set"])
+        tok_arr = tok_arr.with_columns(
+            pl.Series("angle", _proj_angles(tok_arr, x_col, y_col, x_rng, y_rng, x_rev, y_rev))
+        )
+
+        pt1_m = diph_means_df.filter(pl.col("point_num") == 1)[["set", x_col, y_col]].rename({x_col: f"{x_col}_s", y_col: f"{y_col}_s"})
+        pt2_m = diph_means_df.filter(pl.col("point_num") == 2)[["set", x_col, y_col]]
+        mean_arr = pt2_m.join(pt1_m, on="set")
+        mean_arr = mean_arr.with_columns(
+            pl.Series("angle", _proj_angles(mean_arr, x_col, y_col, x_rng, y_rng, x_rev, y_rev))
+        )
+
+        ang_scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
+        x_sc = alt.Scale(reverse=x_rev)
+        y_sc = alt.Scale(reverse=y_rev)
+
+        # Token lines
         layers.append(
             alt.Chart(diph_df)
-            .mark_trail()
+            .mark_line(strokeWidth=1.5)
             .encode(
-                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
-                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                x=alt.X(f"{x_col}:Q", scale=x_sc),
+                y=alt.Y(f"{y_col}:Q", scale=y_sc),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
-                size=alt.Size("point_num:Q", scale=alt.Scale(domain=[1, 2], range=[1, 4]), legend=None),
                 detail="token:N",
                 order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_vis).then(alt.value(0.6)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_vis).then(alt.value(0.4)).otherwise(alt.value(0.0)),
             )
         )
+        # Start dots at point 1
+        layers.append(
+            alt.Chart(diph_df.filter(pl.col("point_num") == 1))
+            .mark_point(shape="circle", size=25, filled=True)
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=x_sc),
+                y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                opacity=alt.when(diph_vis).then(alt.value(0.5)).otherwise(alt.value(0.0)),
+            )
+        )
+        # Arrowhead triangles at point 2
+        layers.append(
+            alt.Chart(tok_arr)
+            .mark_point(shape="triangle", size=60, filled=True)
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=x_sc),
+                y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                angle=alt.Angle("angle:Q", scale=ang_scale),
+                opacity=alt.when(diph_vis).then(alt.value(0.7)).otherwise(alt.value(0.0)),
+                tooltip=[
+                    alt.Tooltip("word:N", title="Word"),
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip(f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"),
+                    alt.Tooltip(f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"),
+                ],
+            )
+        )
+        # Mean line
         layers.append(
             alt.Chart(diph_means_df)
-            .mark_trail()
+            .mark_line(strokeWidth=5)
             .encode(
-                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
-                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                x=alt.X(f"{x_col}:Q", scale=x_sc),
+                y=alt.Y(f"{y_col}:Q", scale=y_sc),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
-                size=alt.Size("point_num:Q", scale=alt.Scale(domain=[1, 2], range=[3, 9]), legend=None),
                 detail="set:N",
                 order=alt.Order("point_num:O"),
                 opacity=alt.when(diph_means_vis).then(alt.value(0.9)).otherwise(alt.value(0.0)),
+            )
+        )
+        # Mean arrowhead at point 2
+        layers.append(
+            alt.Chart(mean_arr)
+            .mark_point(shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5)
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=x_sc),
+                y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                angle=alt.Angle("angle:Q", scale=ang_scale),
+                opacity=alt.when(diph_means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0)),
+                tooltip=[
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip(f"{x_col}:Q", title=f"{_AXIS_TITLES[x_col]} mean", format=".2f"),
+                    alt.Tooltip(f"{y_col}:Q", title=f"{_AXIS_TITLES[y_col]} mean", format=".2f"),
+                ],
             )
         )
 

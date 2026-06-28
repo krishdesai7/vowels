@@ -43,7 +43,7 @@ item []:
         intervals [8]:
             xmin = 3.3459229024943347 
             xmax = 3.7139229024943345 
-            text = "2COMMA_comma" 
+            text = "2coMMA_comma" 
         intervals [9]:
             xmin = 3.7139229024943345 
             xmax = 4.233922902494334 
@@ -347,7 +347,7 @@ item []:
         intervals [84]:
             xmin = 45.489922902494335 
             xmax = 45.86592290249433 
-            text = "2COMMA_quota" 
+            text = "2coMMA_quota" 
         intervals [85]:
             xmin = 45.86592290249433 
             xmax = 46.64992290249433 
@@ -619,7 +619,7 @@ item []:
         intervals [152]:
             xmin = 87.51392290249434 
             xmax = 87.89792290249433 
-            text = "2COMMA_sofa" 
+            text = "2coMMA_sofa" 
         intervals [153]:
             xmin = 87.89792290249433 
             xmax = 89.12992290249434 

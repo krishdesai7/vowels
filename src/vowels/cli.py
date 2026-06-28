@@ -49,13 +49,9 @@ def silences(
 @app.command()
 def label(
     session: str,
-    labels_file: Annotated[
-        str | None, typer.Option("--labels-file", "-f", help="Path to labels.txt")
-    ] = None,
 ) -> None:
     """Label sounding intervals in the TextGrid from labels.txt."""
-
-    label_textgrid(session, labels_file=labels_file)
+    label_textgrid(session)
 
 
 @app.command()

@@ -1,8 +1,8 @@
 CURE_your
 GOAT_home
 DRESS_dress
-2COMMA_comma
-2HAPPY_coffee
+2coMMA_comma
+2haPPY_coffee
 PRICE_try
 START_start
 FORCE_door
@@ -27,7 +27,7 @@ TRAP_tap
 FACE_bait
 START_far
 TRAP_cat
-2LETTER_letter
+2leTTER_letter
 FOOT_put
 NORTH_war
 LOT_got
@@ -39,7 +39,7 @@ FACE_face
 SQUARE_care
 STRUT_trunk
 MOUTH_out
-2COMMA_quota
+2coMMA_quota
 SQUARE_air
 NORTH_born
 START_heart
@@ -48,7 +48,7 @@ NORTH_storm
 TRAP_trap
 FOOT_foot
 STRUT_strut
-2LETTER_butter
+2leTTER_butter
 FLEECE_beat
 FLEECE_speak
 PRICE_hide
@@ -64,7 +64,7 @@ NEAR_near
 GOOSE_tooth
 LOT_stop
 PALM_psalm
-2LETTER_paper
+2leTTER_paper
 KIT_sit
 FLEECE_feel
 GOOSE_goose
@@ -73,17 +73,17 @@ FOOT_book
 CHOICE_boy
 GOAT_boat
 CLOTH_boss
-2COMMA_sofa
+2coMMA_sofa
 FORCE_force
 GOAT_know
-2HAPPY_city
+2haPPY_city
 NEAR_beer
 MOUTH_cow
 PALM_palm
 CLOTH_cloth
 FLEECE_bleed
 CLOTH_cross
-2HAPPY_happy
+2haPPY_happy
 GOOSE_food
 DRESS_bed
 FLEECE_fleece

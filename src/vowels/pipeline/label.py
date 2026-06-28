@@ -4,16 +4,16 @@ from pathlib import Path
 
 import parselmouth
 
-from ..paths import project_root, session_dir
+from ..paths import labels_file, session_dir
 
 
-def label_textgrid(session: str, labels_file: str | None = None) -> None:
+def label_textgrid(session: str) -> None:
     d: Path = session_dir(session)
     tg_path: Path = d / f"{session}.TextGrid"
     out_path: Path = d / f"{session}_labeled.TextGrid"
     intervals_csv: Path = d / f"{session}_intervals.csv"
 
-    labels_path: Path = _resolve_labels_file(labels_file, d)
+    labels_path: Path = labels_file(session)
     with open(labels_path, encoding="utf-8") as f:
         labels: list[str] = [ln.strip() for ln in f if ln.strip()]
 
@@ -53,14 +53,6 @@ def label_textgrid(session: str, labels_file: str | None = None) -> None:
         file=sys.stderr,
     )
     raise SystemExit(1)
-
-
-def _resolve_labels_file(labels_file: str | None, session_d: Path) -> Path:
-    if labels_file:
-        return Path(labels_file)
-    if (session_d / "labels.txt").exists():
-        return session_d / "labels.txt"
-    return project_root() / "labels.txt"
 
 
 def _write_diagnostic_csv(

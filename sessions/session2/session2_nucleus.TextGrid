@@ -43,7 +43,7 @@ item []:
         intervals [8]:
             xmin = 3.3459229024943347 
             xmax = 3.7139229024943345 
-            text = "2COMMA_comma" 
+            text = "2coMMA_comma" 
         intervals [9]:
             xmin = 3.7139229024943345 
             xmax = 4.233922902494334 
@@ -347,7 +347,7 @@ item []:
         intervals [84]:
             xmin = 45.489922902494335 
             xmax = 45.86592290249433 
-            text = "2COMMA_quota" 
+            text = "2coMMA_quota" 
         intervals [85]:
             xmin = 45.86592290249433 
             xmax = 46.64992290249433 
@@ -619,7 +619,7 @@ item []:
         intervals [152]:
             xmin = 87.51392290249434 
             xmax = 87.89792290249433 
-            text = "2COMMA_sofa" 
+            text = "2coMMA_sofa" 
         intervals [153]:
             xmin = 87.89792290249433 
             xmax = 89.12992290249434 
@@ -825,7 +825,7 @@ item []:
             mark = "DRESS_dress" 
         points [4]:
             number = 3.6525895691610013 
-            mark = "2COMMA_comma" 
+            mark = "2coMMA_comma" 
         points [5]:
             number = 4.573922902494335 
             mark = "2HAPPY_coffee" 
@@ -939,7 +939,7 @@ item []:
             mark = "MOUTH_out" 
         points [42]:
             number = 45.80325623582767 
-            mark = "2COMMA_quota" 
+            mark = "2coMMA_quota" 
         points [43]:
             number = 46.82992290249433 
             mark = "SQUARE_air" 
@@ -1041,7 +1041,7 @@ item []:
             mark = "CLOTH_boss" 
         points [76]:
             number = 87.83392290249434 
-            mark = "2COMMA_sofa" 
+            mark = "2coMMA_sofa" 
         points [77]:
             number = 89.22192290249434 
             mark = "FORCE_force" 

@@ -9,7 +9,7 @@ class Wells(StrEnum):
     # High Front (High Contrast)
     FLEECE = "#d62728"  # Red
     KIT = "#1f77b4"  # Blue
-    HAPPY = "#7b4173"  # Dark Purple
+    haPPY = "#7b4173"  # Dark Purple
 
     # Mid Front
     FACE = "#2ca02c"  # Green
@@ -40,8 +40,8 @@ class Wells(StrEnum):
 
     # Schwa/Reduced
     NURSE = "#637939"  # Dark Green
-    COMMA = "#8c6d31"  # Dark Yellow
-    LETTER = "#843c39"  # Dark Red
+    coMMA = "#8c6d31"  # Dark Yellow
+    leTTER = "#843c39"  # Dark Red
 
     # --- DIPHTHONGS ---
     # Distributed across a distinct 6-color spectrum
@@ -55,15 +55,24 @@ class Wells(StrEnum):
 
 
 GROUPS: Final[dict[str, list[str]]] = {
-    "High Front":        ["FLEECE", "KIT", "HAPPY"],
-    "Mid Front":         ["DRESS"],
+    "High Front": ["FLEECE", "KIT", "haPPY"],
+    "Mid Front": ["DRESS"],
     "Low Front/Central": ["TRAP", "BATH", "PALM"],
-    "Low Back":          ["LOT", "THOUGHT", "CLOTH"],
-    "Mid/High Back":     ["FOOT", "GOOSE"],
-    "Central":           ["STRUT", "START"],
-    "R-Colored":         ["NORTH", "FORCE"],
-    "Schwa/Reduced":     ["NURSE", "COMMA", "LETTER"],
-    "Diphthongs":        ["FACE", "GOAT", "PRICE", "CHOICE", "MOUTH", "NEAR", "SQUARE", "CURE"],
+    "Low Back": ["LOT", "THOUGHT", "CLOTH"],
+    "Mid/High Back": ["FOOT", "GOOSE"],
+    "Central": ["STRUT", "START"],
+    "R-Colored": ["NORTH", "FORCE"],
+    "Schwa/Reduced": ["NURSE", "coMMA", "leTTER"],
+    "Diphthongs": [
+        "FACE",
+        "GOAT",
+        "PRICE",
+        "CHOICE",
+        "MOUTH",
+        "NEAR",
+        "SQUARE",
+        "CURE",
+    ],
 }
 
 DIPHTHONGS: Final[set[Wells]] = {

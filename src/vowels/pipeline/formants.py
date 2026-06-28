@@ -7,7 +7,7 @@ import polars as pl
 from ..paths import session_dir
 from ..schema import Gender
 
-parse_labels: Callable[[pl.DataFrame], pl.DataFrame] = lambda df: (  # noqa: E731
+parse_labels: Callable[[pl.LazyFrame], pl.LazyFrame] = lambda df: (  # noqa: E731
     df.with_columns(pl.col("label").str.split_exact("_", 1).alias("parts"))
     .with_columns(
         pl.col("parts").struct.field("field_0").alias("raw_set"),
@@ -17,8 +17,7 @@ parse_labels: Callable[[pl.DataFrame], pl.DataFrame] = lambda df: (  # noqa: E73
     .with_columns(
         pl.col("raw_set")
         .str.replace_all(r":\d+", "")
-        .str.to_uppercase()
-        .str.replace(r"^2([A-Z])", "$1")
+        .str.replace(r"^2([A-Za-z])", "$1")
         .alias("set"),
         pl.col("raw_word").str.replace_all(r":\d+", "").alias("word"),
     )
@@ -80,9 +79,9 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
         f3: float = parselmouth.praat.call(
             formant_obj, "Get value at time", 3, time, "Hertz", "Linear"
         )
-        records.append({"time": time, "label": label, "F0": f0, "F1": f1, "F2": f2, "F3": f3})
+        records.append(
+            {"time": time, "label": label, "F0": f0, "F1": f1, "F2": f2, "F3": f3}
+        )
 
-    df: pl.DataFrame = pl.DataFrame(records)
-    df = parse_labels(df)
-    df.write_csv(d / f"{session}_formants.csv")
-    print(f"Created {d / f'{session}_formants.csv'}")
+    parse_labels(pl.LazyFrame(records)).sink_parquet(d / f"{session}_formants.parquet")
+    print(f"Created {d / f'{session}_formants.parquet'}")

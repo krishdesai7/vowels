@@ -43,7 +43,7 @@ item []:
         intervals [8]:
             xmin = 4.400263038548751 
             xmax = 4.648263038548751 
-            text = "2COMMA_comma" 
+            text = "2coMMA_comma" 
         intervals [9]:
             xmin = 4.648263038548751 
             xmax = 5.400263038548751 
@@ -51,7 +51,7 @@ item []:
         intervals [10]:
             xmin = 5.400263038548751 
             xmax = 5.728263038548751 
-            text = "2HAPPY_coffee" 
+            text = "2haPPY_coffee" 
         intervals [11]:
             xmin = 5.728263038548751 
             xmax = 6.472263038548751 
@@ -251,7 +251,7 @@ item []:
         intervals [60]:
             xmin = 32.29626303854875 
             xmax = 32.56826303854875 
-            text = "2LETTER_letter" 
+            text = "2leTTER_letter" 
         intervals [61]:
             xmin = 32.56826303854875 
             xmax = 33.42426303854875 
@@ -347,7 +347,7 @@ item []:
         intervals [84]:
             xmin = 45.27226303854875 
             xmax = 45.53626303854875 
-            text = "2COMMA_quota" 
+            text = "2coMMA_quota" 
         intervals [85]:
             xmin = 45.53626303854875 
             xmax = 46.33626303854875 
@@ -419,7 +419,7 @@ item []:
         intervals [102]:
             xmin = 54.97626303854875 
             xmax = 55.42426303854875 
-            text = "2LETTER_butter" 
+            text = "2leTTER_butter" 
         intervals [103]:
             xmin = 55.42426303854875 
             xmax = 56.21626303854875 
@@ -547,7 +547,7 @@ item []:
         intervals [134]:
             xmin = 72.48026303854876 
             xmax = 72.80026303854875 
-            text = "2LETTER_paper" 
+            text = "2leTTER_paper" 
         intervals [135]:
             xmin = 72.80026303854875 
             xmax = 73.53626303854875 
@@ -619,7 +619,7 @@ item []:
         intervals [152]:
             xmin = 82.37626303854876 
             xmax = 82.69626303854875 
-            text = "2COMMA_sofa" 
+            text = "2coMMA_sofa" 
         intervals [153]:
             xmin = 82.69626303854875 
             xmax = 83.37626303854876 
@@ -643,7 +643,7 @@ item []:
         intervals [158]:
             xmin = 85.42426303854876 
             xmax = 85.66426303854875 
-            text = "2HAPPY_city" 
+            text = "2haPPY_city" 
         intervals [159]:
             xmin = 85.66426303854875 
             xmax = 86.44026303854875 
@@ -699,7 +699,7 @@ item []:
         intervals [172]:
             xmin = 92.70426303854876 
             xmax = 93.04026303854876 
-            text = "2HAPPY_happy" 
+            text = "2haPPY_happy" 
         intervals [173]:
             xmin = 93.04026303854876 
             xmax = 93.74426303854875 

@@ -31,8 +31,8 @@ disyllabic_time: Callable[[float, float], float] = lambda t1, t2: (  # noqa: E73
 
 def get_set_name(label: str) -> str:
     if "_" in label:
-        return label.split("_", 1)[0].upper()
-    return label.upper()
+        return label.split("_", 1)[0]
+    return label
 
 
 def normalize_label(label: str) -> tuple[str, bool]:
@@ -84,11 +84,9 @@ def make_nucleus_points(session: str) -> None:
             continue
 
         if set_name in _DIPHTHONG_NAMES:
-            t_on, t_off = diphthong_times(t1, t2)
-            parselmouth.praat.call(tg, "Insert point", nucleus_tier, t_on, f"{label}:1")
-            parselmouth.praat.call(
-                tg, "Insert point", nucleus_tier, t_off, f"{label}:2"
-            )
+            t: tuple[float, float] = diphthong_times(t1, t2)
+            parselmouth.praat.call(tg, "Insert point", nucleus_tier, t[0], f"{label}:1")
+            parselmouth.praat.call(tg, "Insert point", nucleus_tier, t[1], f"{label}:2")
         else:
             parselmouth.praat.call(
                 tg, "Insert point", nucleus_tier, nucleus_time(t1, t2), label

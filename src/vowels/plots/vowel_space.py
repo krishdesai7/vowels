@@ -5,11 +5,11 @@ from pathlib import Path
 import altair as alt
 import polars as pl
 
-from ..paths import project_root, session_dir
+from ..paths import data_dir, session_dir
 from ..schema import GROUPS, Wells
+from .ellipse import precompute_ellipse
 
 _DIPH_NAMES: frozenset[str] = frozenset(s for s in GROUPS.get("Diphthongs", []))
-from .ellipse import precompute_ellipse
 
 
 def _text_color(hex_color: str) -> str:
@@ -17,8 +17,10 @@ def _text_color(hex_color: str) -> str:
     return "#333" if (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 else "white"
 
 
-def build_chart(session: str) -> alt.LayerChart:
-    df: pl.DataFrame = pl.read_csv(session_dir(session) / f"{session}_formants.csv")
+def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
+    df: pl.DataFrame = pl.read_parquet(
+        session_dir(session) / f"{session}_formants.parquet"
+    )
 
     is_diph: pl.Expr = pl.col("label").str.contains(":")
     mono_df: pl.DataFrame = df.filter(~is_diph)
@@ -47,14 +49,14 @@ def build_chart(session: str) -> alt.LayerChart:
         f'(datum.set === "{s}" ? show_{s} : true)' for s in all_sets
     )
 
-    mono_vis:       str = f"showWords && showMono && ({_sets})"
-    means_vis:      str = f"showMeans && showMono && ({_sets})"
-    ellipse_vis:    str = f"showMono && ({_sets})"
-    diph_vis:       str = f"showWords && showDiph && ({_sets})"
+    mono_vis: str = f"showWords && showMono && ({_sets})"
+    means_vis: str = f"showMeans && showMono && ({_sets})"
+    ellipse_vis: str = f"showMono && ({_sets})"
+    diph_vis: str = f"showWords && showDiph && ({_sets})"
     diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
 
     # Layer 1: IPA reference text
-    std_path: Path = project_root() / "male_standard.parquet"
+    std_path: Path = data_dir / "standards" / "male_standard.parquet"
     std_df: pl.DataFrame = pl.read_parquet(std_path).drop_nulls(subset=["F1", "F2"])
     ref_layer: alt.Chart = (
         alt.Chart(std_df)
@@ -155,7 +157,11 @@ def build_chart(session: str) -> alt.LayerChart:
     if has_diph:
         diph_df = diph_df.with_columns(
             pl.col("label").str.split(":").list.first().alias("token"),
-            pl.col("label").str.split(":").list.last().cast(pl.Int32).alias("point_num"),
+            pl.col("label")
+            .str.split(":")
+            .list.last()
+            .cast(pl.Int32)
+            .alias("point_num"),
         )
         diph_means_df: pl.DataFrame = (
             diph_df.group_by(["set", "point_num"])
@@ -167,25 +173,43 @@ def build_chart(session: str) -> alt.LayerChart:
         # x=F2 reversed → screen moves LEFT as F2 rises  → screen_dx = -ΔF2
         # y=F1 reversed → screen moves DOWN  as F1 rises → screen_dy = +ΔF1
         # angle = atan2(screen_dx, -screen_dy) = atan2(-ΔF2/rng·W, -ΔF1/rng·H)
-        F2_rng = float((mono_df["F2"].max() - mono_df["F2"].min()) or 1.0)
-        F1_rng = float((mono_df["F1"].max() - mono_df["F1"].min()) or 1.0)
+        F2_rng = float((mono_df["F2"].max() - mono_df["F2"].min()) or 1.0)  # type: ignore
+        F1_rng = float((mono_df["F1"].max() - mono_df["F1"].min()) or 1.0)  # type: ignore
         W, H = 650.0, 550.0
 
         def _ang(dx: float, dy: float) -> float:
             return math.degrees(math.atan2(-dx / F2_rng * W, -dy / F1_rng * H))
 
-        pt1_t = diph_df.filter(pl.col("point_num") == 1)[["token", "set", "F1", "F2"]].rename({"F1": "F1_s", "F2": "F2_s"})
-        pt2_t = diph_df.filter(pl.col("point_num") == 2)[["token", "set", "F1", "F2", "word"]]
+        pt1_t = diph_df.filter(pl.col("point_num") == 1)[
+            ["token", "set", "F1", "F2"]
+        ].rename({"F1": "F1_s", "F2": "F2_s"})
+        pt2_t = diph_df.filter(pl.col("point_num") == 2)[
+            ["token", "set", "F1", "F2", "word"]
+        ]
         tok_arr = pt2_t.join(pt1_t, on=["token", "set"])
         tok_arr = tok_arr.with_columns(
-            pl.Series("angle", [_ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"]) for r in tok_arr.iter_rows(named=True)])
+            pl.Series(
+                "angle",
+                [
+                    _ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"])
+                    for r in tok_arr.iter_rows(named=True)
+                ],
+            )
         )
 
-        pt1_m = diph_means_df.filter(pl.col("point_num") == 1)[["set", "F1", "F2"]].rename({"F1": "F1_s", "F2": "F2_s"})
+        pt1_m = diph_means_df.filter(pl.col("point_num") == 1)[
+            ["set", "F1", "F2"]
+        ].rename({"F1": "F1_s", "F2": "F2_s"})
         pt2_m = diph_means_df.filter(pl.col("point_num") == 2)[["set", "F1", "F2"]]
         mean_arr = pt2_m.join(pt1_m, on="set")
         mean_arr = mean_arr.with_columns(
-            pl.Series("angle", [_ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"]) for r in mean_arr.iter_rows(named=True)])
+            pl.Series(
+                "angle",
+                [
+                    _ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"])
+                    for r in mean_arr.iter_rows(named=True)
+                ],
+            )
         )
 
         ang_scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
@@ -200,7 +224,9 @@ def build_chart(session: str) -> alt.LayerChart:
                 color=alt.Color("set:N", scale=color_scale, legend=None),
                 detail="token:N",
                 order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_vis).then(alt.value(0.4)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_vis)
+                .then(alt.value(0.4))
+                .otherwise(alt.value(0.0)),
             )
         )
         # Start dots at point 1
@@ -211,7 +237,9 @@ def build_chart(session: str) -> alt.LayerChart:
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
                 y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
-                opacity=alt.when(diph_vis).then(alt.value(0.5)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_vis)
+                .then(alt.value(0.5))
+                .otherwise(alt.value(0.0)),
             )
         )
         # Arrowhead triangles at point 2
@@ -223,7 +251,9 @@ def build_chart(session: str) -> alt.LayerChart:
                 y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
                 angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_vis).then(alt.value(0.7)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_vis)
+                .then(alt.value(0.7))
+                .otherwise(alt.value(0.0)),
                 tooltip=[
                     alt.Tooltip("word:N", title="Word"),
                     alt.Tooltip("set:N", title="Set"),
@@ -242,19 +272,25 @@ def build_chart(session: str) -> alt.LayerChart:
                 color=alt.Color("set:N", scale=color_scale, legend=None),
                 detail="set:N",
                 order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_means_vis).then(alt.value(0.9)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_means_vis)
+                .then(alt.value(0.9))
+                .otherwise(alt.value(0.0)),
             )
         )
         # Mean arrowhead at point 2
         layers.append(
             alt.Chart(mean_arr)
-            .mark_point(shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5)
+            .mark_point(
+                shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5
+            )
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
                 y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
                 color=alt.Color("set:N", scale=color_scale, legend=None),
                 angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0)),
+                opacity=alt.when(diph_means_vis)
+                .then(alt.value(1.0))
+                .otherwise(alt.value(0.0)),
                 tooltip=[
                     alt.Tooltip("set:N", title="Set"),
                     alt.Tooltip("F1:Q", title="F1 mean (Hz)", format=".0f"),
@@ -265,16 +301,16 @@ def build_chart(session: str) -> alt.LayerChart:
 
     return (
         alt.layer(*layers)
-        .add_params(words_param, means_param, mono_param, diph_param, *set_params.values())
+        .add_params(
+            words_param, means_param, mono_param, diph_param, *set_params.values()
+        )
         .resolve_scale(x="shared", y="shared")
         .properties(width=650, height=550, title=f"Vowel Space — {session}")
         .configure_view(strokeWidth=0)
     )
 
 
-def _inject_controls(
-    html: str, *, has_diph: bool, set_colors: dict[str, str]
-) -> str:
+def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -> str:
     def btn(sig: str, label: str) -> str:
         return f'<button class="vt-btn active" data-signal="{sig}">{label}</button>'
 
@@ -291,30 +327,33 @@ def _inject_controls(
         type_html += btn("showDiph", "Diphthongs")
 
     groups_with_data = [
-        (grp_name, "".join(set_btn(s, set_colors[s]) for s in grp_sets if s in set_colors))
+        (
+            grp_name,
+            "".join(set_btn(s, set_colors[s]) for s in grp_sets if s in set_colors),
+        )
         for grp_name, grp_sets in GROUPS.items()
     ]
     groups_with_data = [(g, b) for g, b in groups_with_data if b]
     mid = (len(groups_with_data) + 1) // 2
-    col1_html = "".join(f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[:mid])
-    col2_html = "".join(f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[mid:])
+    col1_html = "".join(
+        f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[:mid]
+    )
+    col2_html = "".join(
+        f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[mid:]
+    )
     set_grid = (
         '<div class="vt-set-cols">'
-        '<div class="vt-set-col">' + col1_html + '</div>'
-        '<div class="vt-set-col">' + col2_html + '</div>'
-        '</div>'
+        '<div class="vt-set-col">' + col1_html + "</div>"
+        '<div class="vt-set-col">' + col2_html + "</div>"
+        "</div>"
     )
 
     sidebar = (
         '<div id="vt-controls">'
         '<div class="vt-section">'
-        '<div class="vt-label">Display</div>'
-        + display_html
-        + "</div>"
+        '<div class="vt-label">Display</div>' + display_html + "</div>"
         '<div class="vt-section">'
-        '<div class="vt-label">Type</div>'
-        + type_html
-        + "</div>"
+        '<div class="vt-label">Type</div>' + type_html + "</div>"
         '<div class="vt-section">'
         '<div class="vt-label">Lexical sets</div>'
         '<button class="vt-btn active" id="vt-all-btn">All</button>'
@@ -418,7 +457,9 @@ def _inject_controls(
 
 
 def save_chart(session: str) -> None:
-    df: pl.DataFrame = pl.read_csv(session_dir(session) / f"{session}_formants.csv")
+    df: pl.DataFrame = pl.read_parquet(
+        session_dir(session) / f"{session}_formants.parquet"
+    )
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}

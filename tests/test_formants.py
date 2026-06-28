@@ -25,7 +25,7 @@ def _make_df(labels: list[str]) -> pl.LazyFrame:
 
 def test_output_has_required_columns() -> None:
     df: pl.LazyFrame = _make_df(["FLEECE_beat", "TRAP_bad"])
-    assert REQUIRED_COLUMNS.issubset(set(df.columns))
+    assert REQUIRED_COLUMNS.issubset(set(df.collect_schema().names()))
 
 
 def test_no_null_set_or_word_for_standard_labels() -> None:

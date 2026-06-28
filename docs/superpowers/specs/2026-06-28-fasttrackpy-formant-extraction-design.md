@@ -113,9 +113,9 @@ Per token:
 - **Diphthong:** min-velocity in `[0.1, 0.45]` → `…:1`, and `[0.55, 0.9]` →
   `…:2` (two rows, matching the plot contract).
 - **Disyllabic (`2`-prefix, ~9 tokens):** restrict the search window to ±0.15
-  around `SECOND_VOWEL_CENTER_RATIO` (~0.71) so the target lands on the second
-  syllable as today. *Deliberately approximate:* a 2-syllable interval has two
-  steady states; we pick the second.
+  around `SECOND_VOWEL_CENTER_RATIO` (= 5/6 ≈ 0.833) so the target lands on the
+  second syllable as today. *Deliberately approximate:* a 2-syllable interval
+  has two steady states; we pick the second.
 
 `F0` for the point is the smoothed-track value at the chosen frame (or the
 per-token mean F0 if the chosen frame's F0 is NaN).

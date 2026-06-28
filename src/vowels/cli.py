@@ -7,7 +7,6 @@ from . import (
     detect_silences,
     extract_formants,
     label_textgrid,
-    make_nucleus_points,
     save_bark_chart,
     save_bark_projections,
     save_chart,
@@ -52,12 +51,6 @@ def label(
 ) -> None:
     """Label sounding intervals in the TextGrid from labels.txt."""
     label_textgrid(session)
-
-
-@app.command()
-def nucleus(session: str) -> None:
-    """Create nucleus point tier for formant extraction."""
-    make_nucleus_points(session)
 
 
 @app.command()
@@ -114,10 +107,9 @@ def run(
         ),
     ] = 0.08,
 ) -> None:
-    """Run the full pipeline: silences → label → nucleus → formants → plot."""
+    """Run the full pipeline: silences → label → formants → plots."""
     detect_silences(session, min_sounding_interval=min_sounding_interval)
     label_textgrid(session)
-    make_nucleus_points(session)
     extract_formants(session, gender)
     save_chart(session)
     save_bark_chart(session)

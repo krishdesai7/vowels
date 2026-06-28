@@ -26,13 +26,10 @@ uv run vowels silences <session>
 # Step 2: Label TextGrid intervals with vowel annotations
 uv run vowels label <session>
 
-# Step 3: Create nucleus point tier for formant extraction
-uv run vowels nucleus <session>
-
-# Step 4: Extract formants and save to parquet
+# Step 3: Extract formants and save to parquet
 uv run vowels formants <session> --gender M
 
-# Step 5: Generate plots from existing parquet
+# Step 4: Generate plots from existing parquet
 uv run vowels plot <session>
 uv run vowels bark <session>
 uv run vowels projections <session>
@@ -55,9 +52,7 @@ uv sync
 
 3. **`label`**: Reads `labels.txt` and assigns labels to "sounding" intervals in the TextGrid, producing `<session>_labeled.TextGrid`. If the label count doesn't match the interval count, writes a diagnostic CSV (`<session>_intervals.csv`) for manual correction and exits with an error.
 
-4. **`nucleus`**: Creates a "nucleus" point tier marking vowel measurement points. Monophthongs get one midpoint; diphthongs get two points at 25% and 75% of interval duration. Disyllabic words (prefixed with `2`) use a weighted center calculation for the second syllable.
-
-5. **`formants`**: Extracts F1/F2/F3 at nucleus points using Praat's Burg algorithm and saves to `<session>_formants.parquet`. Then generates three interactive HTML plots:
+4. **`formants`**: Extracts F1/F2/F3 by tracking the full formant trajectory per labeled vowel interval (fasttrackpy, auto-selected ceiling) and collapsing each token to its steady-state (minimum-velocity) frame. Saves to `<session>_formants.parquet`. Then generates three interactive HTML plots:
    - `<session>_vowel_space.html` — F1/F2 scatter plot with ellipses and mean markers
    - `<session>_bark_space.html` — 3D Bark Z vowel space (Openness × Frontness × Roundness)
    - `<session>_bark_projections.html` — three 2D Bark projections

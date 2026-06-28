@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from pathlib import Path
 
 import parselmouth
@@ -7,22 +6,24 @@ import polars as pl
 from ..paths import session_dir
 from ..schema import Gender
 
-parse_labels: Callable[[pl.LazyFrame], pl.LazyFrame] = lambda df: (  # noqa: E731
-    df.with_columns(pl.col("label").str.split_exact("_", 1).alias("parts"))
-    .with_columns(
-        pl.col("parts").struct.field("field_0").alias("raw_set"),
-        pl.col("parts").struct.field("field_1").alias("raw_word"),
+
+def parse_labels(df: pl.LazyFrame) -> pl.LazyFrame:
+    return (
+        df.with_columns(pl.col("label").str.split_exact("_", 1).alias("parts"))
+        .with_columns(
+            pl.col("parts").struct.field("field_0").alias("raw_set"),
+            pl.col("parts").struct.field("field_1").alias("raw_word"),
+        )
+        .drop("parts")
+        .with_columns(
+            pl.col("raw_set")
+            .str.replace_all(r":\d+", "")
+            .str.replace(r"^2([A-Za-z])", "$1")
+            .alias("set"),
+            pl.col("raw_word").str.replace_all(r":\d+", "").alias("word"),
+        )
+        .drop(["raw_set", "raw_word"])
     )
-    .drop("parts")
-    .with_columns(
-        pl.col("raw_set")
-        .str.replace_all(r":\d+", "")
-        .str.replace(r"^2([A-Za-z])", "$1")
-        .alias("set"),
-        pl.col("raw_word").str.replace_all(r":\d+", "").alias("word"),
-    )
-    .drop(["raw_set", "raw_word"])
-)
 
 
 def extract_formants(session: str, gender: Gender = Gender.M) -> None:

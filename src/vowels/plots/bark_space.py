@@ -18,12 +18,19 @@ def _bark(i: int) -> pl.Expr:
     return ((26.81 * col) / (1960 + col) - 0.53).alias(f"Z{i}")
 
 
-def _add_bark_dims(df: pl.LazyFrame) -> pl.LazyFrame:
-    df = df.with_columns(_bark(i) for i in range(0, 4))
-    return df.with_columns(
+def _add_bark_dims(df: pl.DataFrame) -> pl.DataFrame:
+    return df.with_columns(_bark(i) for i in range(0, 4)).with_columns(
         (pl.col("Z1") - pl.col("Z0")).alias("Openness"),
         (pl.col("Z2") - pl.col("Z1")).alias("Frontness"),
         (pl.col("Z3") - pl.col("Z2")).alias("Roundness"),
+    )
+
+
+def _load_formants(session: str) -> pl.DataFrame:
+    return (
+        pl.read_parquet(session_dir(session) / f"{session}_formants.parquet")
+        .pipe(_add_bark_dims)
+        .filter(pl.col("F0").is_not_nan())
     )
 
 
@@ -35,45 +42,36 @@ def _proj_angle_expr(
     x_rev: bool,
     y_rev: bool,
 ) -> pl.Expr:
-    """Return a lazy-compatible Polars expression for arrowhead angles.
-    Vega-Lite uses degrees clockwise from North. Map data deltas into normalized
-    screen-space deltas, accounting for reversed axes, then compute atan2 in
-    degrees as atan2d(screen_dx, screen_dy_upward).
+    """Arrowhead angle expression for Vega-Lite (degrees clockwise from North).
+
+    Maps data-space deltas into normalised screen-space deltas accounting for
+    reversed axes, then computes atan2d(screen_dx, screen_dy_upward).
     """
     x_sign: float = -1.0 if x_rev else 1.0
     y_sign_up: float = -1.0 if y_rev else 1.0
     screen_dx: pl.Expr = x_sign * (pl.col(x_col) - pl.col(f"{x_col}_s")) / x_rng
-
     screen_dy_up: pl.Expr = y_sign_up * (pl.col(y_col) - pl.col(f"{y_col}_s")) / y_rng
     return pl.arctan2(screen_dx, screen_dy_up).degrees().alias("angle")
 
 
-def build_bark_chart(session: str) -> go.Figure:
-    lf: pl.LazyFrame = pl.scan_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
-    lf = _add_bark_dims(lf).filter(pl.col("F0").is_not_nan())
+def _load_std(drop_nulls: list[str]) -> pl.DataFrame:
+    df: pl.DataFrame = pl.read_parquet(data_dir / "standards" / "male_standard.parquet")
+    if "Closeness" in df.columns:
+        df = df.rename({"Closeness": "Openness"})
+    return df.drop_nulls(subset=drop_nulls)
 
-    df: pl.DataFrame = lf.collect()
+
+def build_bark_chart(df: pl.DataFrame, session: str) -> go.Figure:
     is_diph: pl.Expr = pl.col("label").str.contains(":")
     mono_df: pl.DataFrame = df.filter(~is_diph)
     diph_df: pl.DataFrame = df.filter(is_diph)
     has_diph: bool = not diph_df.is_empty()
 
-    all_sets: list[str] = sorted(df.get_column("set").unique().to_list())
+    all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_map: dict[str, str] = {s: Wells[s].value for s in all_sets}
 
-    traces: list[go.Scatter3d] = []
-
-    # IPA reference overlay
-    std_path: Path = data_dir / "standards" / "male_standard.parquet"
-    std_lf: pl.LazyFrame = pl.scan_parquet(std_path)
-    if "Closeness" in std_lf.columns:
-        std_lf = std_lf.rename({"Closeness": "Openness"})
-    std_df: pl.DataFrame = std_lf.drop_nulls(
-        subset=["Openness", "Frontness", "Roundness"]
-    ).collect()
-    traces.append(
+    std_df: pl.DataFrame = _load_std(["Openness", "Frontness", "Roundness"])
+    traces: list[go.Scatter3d] = [
         go.Scatter3d(
             x=std_df["Frontness"].to_list(),
             y=std_df["Openness"].to_list(),
@@ -86,15 +84,14 @@ def build_bark_chart(session: str) -> go.Figure:
             hoverinfo="skip",
             name="IPA reference",
         )
-    )
+    ]
 
     for s in all_sets:
         c: str = color_map[s]
         sub: pl.DataFrame = mono_df.filter(pl.col("set") == s)
-        if len(sub) == 0:
+        if sub.is_empty():
             continue
 
-        # Monophthong tokens
         traces.append(
             go.Scatter3d(
                 x=sub["Frontness"].to_list(),
@@ -130,7 +127,6 @@ def build_bark_chart(session: str) -> go.Figure:
             )
         )
 
-        # Monophthong means
         means: tuple[float, float, float] = sub.select(
             pl.col("Frontness").mean(),
             pl.col("Openness").mean(),
@@ -176,10 +172,10 @@ def build_bark_chart(session: str) -> go.Figure:
         for s in all_sets:
             c = color_map[s]
             sub = diph_df.filter(pl.col("set") == s)
-            if len(sub) == 0:
+            if sub.is_empty():
                 continue
 
-            tokens: list[str] = sub.get_column("token").unique().to_list()
+            tokens: list[str] = sub["token"].unique().to_list()
             x_segs: list[float] = []
             y_segs: list[float] = []
             z_segs: list[float] = []
@@ -187,9 +183,9 @@ def build_bark_chart(session: str) -> go.Figure:
                 pts: pl.DataFrame = sub.filter(pl.col("token") == tok).sort("point_num")
                 if len(pts) < 2:
                     continue
-                x_segs += pts.get_column("Frontness").to_list() + [None]
-                y_segs += pts.get_column("Openness").to_list() + [None]
-                z_segs += pts.get_column("Roundness").to_list() + [None]
+                x_segs += pts["Frontness"].to_list() + [None]
+                y_segs += pts["Openness"].to_list() + [None]
+                z_segs += pts["Roundness"].to_list() + [None]
 
             if x_segs:
                 traces.append(
@@ -214,7 +210,7 @@ def build_bark_chart(session: str) -> go.Figure:
                     )
                 )
 
-            dm = (
+            dm: pl.DataFrame = (
                 diph_df.filter(pl.col("set") == s)
                 .group_by("point_num")
                 .agg(
@@ -227,9 +223,9 @@ def build_bark_chart(session: str) -> go.Figure:
             if len(dm) >= 2:
                 traces.append(
                     go.Scatter3d(
-                        x=dm.get_column("Frontness").to_list(),
-                        y=dm.get_column("Openness").to_list(),
-                        z=dm.get_column("Roundness").to_list(),
+                        x=dm["Frontness"].to_list(),
+                        y=dm["Openness"].to_list(),
+                        z=dm["Roundness"].to_list(),
                         mode="lines+markers",
                         line=dict(color=c, width=5),
                         marker=dict(
@@ -253,7 +249,7 @@ def build_bark_chart(session: str) -> go.Figure:
                     )
                 )
 
-    fig = go.Figure(
+    return go.Figure(
         data=traces,
         layout=go.Layout(
             title=f"Bark Z Vowel Space — {session}",
@@ -266,7 +262,6 @@ def build_bark_chart(session: str) -> go.Figure:
             margin=dict(l=0, r=0, t=40, b=0),
         ),
     )
-    return fig
 
 
 def _inject_bark_controls(
@@ -349,7 +344,6 @@ def _inject_bark_controls(
         "</style>"
     )
 
-    # setupToggles receives the graph div element directly (not via gd in post_script scope)
     js: str = (
         "<script>"
         "function setupToggles(gd){"
@@ -424,15 +418,12 @@ def _inject_bark_controls(
 
 
 def save_bark_chart(session: str) -> None:
-    df: pl.DataFrame = pl.read_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
-    has_diph: bool = df.get_column("label").str.contains(":").any()
-    all_sets: list[str] = sorted(df.get_column("set").unique().to_list())
+    df: pl.DataFrame = _load_formants(session)
+    has_diph: bool = df["label"].str.contains(":").any()
+    all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
 
-    fig: go.Figure = build_bark_chart(session)
-    # post_script runs inside .then(function(){...}) with no parameter — use getElementById
+    fig: go.Figure = build_bark_chart(df, session)
     html: str = fig.to_html(
         div_id=DIV_ID,
         include_plotlyjs=True,
@@ -474,7 +465,6 @@ def _projection_chart(
     ellipse_vis: str,
     diph_vis: str,
     diph_means_vis: str,
-    has_diph: bool,
 ) -> alt.LayerChart | alt.FacetChart:
     x_enc = alt.X(
         f"{x_col}:Q",
@@ -548,11 +538,10 @@ def _projection_chart(
         )
     )
 
-    means_df: pl.DataFrame = mono_df.group_by("set").agg(
-        pl.col(x_col).mean(), pl.col(y_col).mean()
-    )
     layers.append(
-        alt.Chart(means_df)
+        alt.Chart(
+            mono_df.group_by("set").agg(pl.col(x_col).mean(), pl.col(y_col).mean())
+        )
         .mark_point(
             shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
         )
@@ -573,7 +562,7 @@ def _projection_chart(
         )
     )
 
-    if has_diph and len(diph_df) > 0:
+    if not diph_df.is_empty():
         diph_means_df: pl.DataFrame = (
             diph_df.group_by(["set", "point_num"])
             .agg(pl.col(x_col).mean(), pl.col(y_col).mean())
@@ -713,20 +702,13 @@ def _projection_chart(
     )
 
 
-def build_bark_projections(session: str) -> alt.HConcatChart:
-    lf: pl.LazyFrame = pl.scan_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
-    lf = _add_bark_dims(lf)
-    lf = lf.filter(pl.col("F0").is_not_nan())
-
+def build_bark_projections(df: pl.DataFrame, session: str) -> alt.HConcatChart:
     is_diph: pl.Expr = pl.col("label").str.contains(":")
-    mono_lf: pl.LazyFrame = lf.filter(~is_diph)
-    diph_lf: pl.LazyFrame = lf.filter(is_diph)
-    has_diph: bool = diph_lf.select(pl.len()).collect().item() > 0
+    mono_df: pl.DataFrame = df.filter(~is_diph)
+    diph_df: pl.DataFrame = df.filter(is_diph)
 
-    if has_diph:
-        diph_lf = diph_lf.with_columns(
+    if not diph_df.is_empty():
+        diph_df = diph_df.with_columns(
             pl.col("label").str.split(":").list.first().alias("token"),
             pl.col("label")
             .str.split(":")
@@ -735,11 +717,7 @@ def build_bark_projections(session: str) -> alt.HConcatChart:
             .alias("point_num"),
         )
 
-    diph_df: pl.DataFrame = diph_lf.collect()
-
-    all_sets: list[str] = sorted(
-        lf.select(pl.col("set")).unique().collect().get_column("set").to_list()
-    )
+    all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_scale: alt.Scale = alt.Scale(
         domain=all_sets, range=[Wells[s].value for s in all_sets]
     )
@@ -761,14 +739,7 @@ def build_bark_projections(session: str) -> alt.HConcatChart:
     diph_vis: str = f"showWords && showDiph && ({_sets})"
     diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
 
-    std_path: Path = data_dir / "standards" / "male_standard.parquet"
-    std_df: pl.DataFrame = pl.read_parquet(std_path).drop_nulls(
-        subset=["Frontness", "Roundness"]
-    )
-    if "Closeness" in std_df.columns:
-        std_df = std_df.rename({"Closeness": "Openness"})
-
-    mono_df: pl.DataFrame = mono_lf.collect()
+    std_df: pl.DataFrame = _load_std(["Frontness", "Roundness"])
 
     def projection(x_col: str, y_col: str) -> alt.LayerChart | alt.FacetChart:
         return _projection_chart(
@@ -783,15 +754,14 @@ def build_bark_projections(session: str) -> alt.HConcatChart:
             ellipse_vis=ellipse_vis,
             diph_vis=diph_vis,
             diph_means_vis=diph_means_vis,
-            has_diph=has_diph,
         )
 
-    proj_fo: alt.LayerChart | alt.FacetChart = projection("Frontness", "Openness")
-    proj_fr: alt.LayerChart | alt.FacetChart = projection("Frontness", "Roundness")
-    proj_or: alt.LayerChart | alt.FacetChart = projection("Openness", "Roundness")
-
     return (
-        alt.hconcat(proj_fo, proj_fr, proj_or)
+        alt.hconcat(
+            projection("Frontness", "Openness"),
+            projection("Frontness", "Roundness"),
+            projection("Openness", "Roundness"),
+        )
         .add_params(
             words_param, means_param, mono_param, diph_param, *set_params.values()
         )
@@ -801,15 +771,13 @@ def build_bark_projections(session: str) -> alt.HConcatChart:
 
 
 def save_bark_projections(session: str) -> None:
-    df: pl.DataFrame = pl.read_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
-    has_diph: bool = df.get_column("label").str.contains(":").any()
-    all_sets: list[str] = sorted(df.get_column("set").unique().to_list())
+    df: pl.DataFrame = _load_formants(session)
+    has_diph: bool = df["label"].str.contains(":").any()
+    all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_bark_projections.html"
-    html: str = build_bark_projections(session).to_html()
+    html: str = build_bark_projections(df, session).to_html()
     html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
     print(f"Created {out_path}")

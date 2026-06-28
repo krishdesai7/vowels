@@ -1,4 +1,3 @@
-import math
 import re
 from pathlib import Path
 
@@ -17,15 +16,11 @@ def _text_color(hex_color: str) -> str:
     return "#333" if (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 else "white"
 
 
-def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
-    df: pl.DataFrame = pl.read_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
-
+def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetChart:
     is_diph: pl.Expr = pl.col("label").str.contains(":")
     mono_df: pl.DataFrame = df.filter(~is_diph)
     diph_df: pl.DataFrame = df.filter(is_diph)
-    has_diph: bool = len(diph_df) > 0
+    has_diph: bool = not diph_df.is_empty()
 
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_scale: alt.Scale = alt.Scale(
@@ -56,8 +51,9 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
     diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
 
     # Layer 1: IPA reference text
-    std_path: Path = data_dir / "standards" / "male_standard.parquet"
-    std_df: pl.DataFrame = pl.read_parquet(std_path).drop_nulls(subset=["F1", "F2"])
+    std_df: pl.DataFrame = pl.read_parquet(
+        data_dir / "standards" / "male_standard.parquet"
+    ).drop_nulls(subset=["F1", "F2"])
     ref_layer: alt.Chart = (
         alt.Chart(std_df)
         .mark_text(color="#c0c0c0", fontSize=11, fontWeight="bold")
@@ -86,9 +82,8 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
     layers: list[alt.Chart] = [ref_layer]
 
     if ellipse_records:
-        ellipse_df: pl.DataFrame = pl.DataFrame(ellipse_records)
-        ellipse_layer: alt.Chart = (
-            alt.Chart(ellipse_df)
+        layers.append(
+            alt.Chart(pl.DataFrame(ellipse_records))
             .mark_line(filled=True, fillOpacity=0.12, strokeWidth=1.5)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -101,10 +96,9 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
                 ),
             )
         )
-        layers.append(ellipse_layer)
 
     # Layer 3: Monophthong tokens
-    token_layer: alt.Chart = (
+    layers.append(
         alt.Chart(mono_df)
         .mark_circle(size=60, stroke="white", strokeWidth=0.5)
         .encode(
@@ -125,15 +119,14 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
             ],
         )
     )
-    layers.append(token_layer)
 
     # Layer 4: Per-set means (monophthongs only)
-    means_df: pl.DataFrame = mono_df.group_by("set").agg(
-        pl.col("F1").mean().alias("F1"),
-        pl.col("F2").mean().alias("F2"),
-    )
-    means_layer: alt.Chart = (
-        alt.Chart(means_df)
+    layers.append(
+        alt.Chart(
+            mono_df.group_by("set").agg(
+                pl.col("F1").mean(), pl.col("F2").mean()
+            )
+        )
         .mark_point(
             shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
         )
@@ -151,7 +144,6 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
             ],
         )
     )
-    layers.append(means_layer)
 
     # Layers 5+: Diphthong tokens and mean trajectories with directional arrows
     if has_diph:
@@ -169,50 +161,40 @@ def build_chart(session: str) -> alt.LayerChart | alt.FacetChart:
             .sort(["set", "point_num"])
         )
 
-        # Arrowhead angle: Vega-Lite convention = degrees CW from North.
-        # x=F2 reversed → screen moves LEFT as F2 rises  → screen_dx = -ΔF2
-        # y=F1 reversed → screen moves DOWN  as F1 rises → screen_dy = +ΔF1
-        # angle = atan2(screen_dx, -screen_dy) = atan2(-ΔF2/rng·W, -ΔF1/rng·H)
-        F2_rng = float((mono_df["F2"].max() - mono_df["F2"].min()) or 1.0)  # type: ignore
-        F1_rng = float((mono_df["F1"].max() - mono_df["F1"].min()) or 1.0)  # type: ignore
+        # Axis spans for normalising arrowhead angles into screen space.
+        # x=F2 reversed → screen moves left as F2 rises; y=F1 reversed → same.
+        # Chart pixel dims (650×550) are folded in so angles are visually correct.
+        F2_rng: float = float((mono_df["F2"].max() - mono_df["F2"].min()) or 1.0)  # type: ignore
+        F1_rng: float = float((mono_df["F1"].max() - mono_df["F1"].min()) or 1.0)  # type: ignore
         W, H = 650.0, 550.0
 
-        def _ang(dx: float, dy: float) -> float:
-            return math.degrees(math.atan2(-dx / F2_rng * W, -dy / F1_rng * H))
+        def _angle_expr() -> pl.Expr:
+            return pl.arctan2(
+                -(pl.col("F2") - pl.col("F2_s")) / F2_rng * W,
+                -(pl.col("F1") - pl.col("F1_s")) / F1_rng * H,
+            ).degrees().alias("angle")
 
-        pt1_t = diph_df.filter(pl.col("point_num") == 1)[
+        pt1_t: pl.DataFrame = diph_df.filter(pl.col("point_num") == 1)[
             ["token", "set", "F1", "F2"]
         ].rename({"F1": "F1_s", "F2": "F2_s"})
-        pt2_t = diph_df.filter(pl.col("point_num") == 2)[
+        pt2_t: pl.DataFrame = diph_df.filter(pl.col("point_num") == 2)[
             ["token", "set", "F1", "F2", "word"]
         ]
-        tok_arr = pt2_t.join(pt1_t, on=["token", "set"])
-        tok_arr = tok_arr.with_columns(
-            pl.Series(
-                "angle",
-                [
-                    _ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"])
-                    for r in tok_arr.iter_rows(named=True)
-                ],
-            )
+        tok_arr: pl.DataFrame = pt2_t.join(pt1_t, on=["token", "set"]).with_columns(
+            _angle_expr()
         )
 
-        pt1_m = diph_means_df.filter(pl.col("point_num") == 1)[
+        pt1_m: pl.DataFrame = diph_means_df.filter(pl.col("point_num") == 1)[
             ["set", "F1", "F2"]
         ].rename({"F1": "F1_s", "F2": "F2_s"})
-        pt2_m = diph_means_df.filter(pl.col("point_num") == 2)[["set", "F1", "F2"]]
-        mean_arr = pt2_m.join(pt1_m, on="set")
-        mean_arr = mean_arr.with_columns(
-            pl.Series(
-                "angle",
-                [
-                    _ang(r["F2"] - r["F2_s"], r["F1"] - r["F1_s"])
-                    for r in mean_arr.iter_rows(named=True)
-                ],
-            )
+        pt2_m: pl.DataFrame = diph_means_df.filter(pl.col("point_num") == 2)[
+            ["set", "F1", "F2"]
+        ]
+        mean_arr: pl.DataFrame = pt2_m.join(pt1_m, on="set").with_columns(
+            _angle_expr()
         )
 
-        ang_scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
+        ang_scale: alt.Scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
 
         # Token lines
         layers.append(
@@ -397,7 +379,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
     js = (
         "<script>"
         "function setupToggles(view){"
-        # Granularity / type buttons (each has data-signal; All button has none so guard skips it)
         "document.querySelectorAll('.vt-btn').forEach(function(btn){"
         "btn.addEventListener('click',function(){"
         "var sig=this.dataset.signal;"
@@ -406,7 +387,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         "view.signal(sig,active).run();"
         "});"
         "});"
-        # All button — flip every set to the opposite of the current all-on state
         "var allBtn=document.getElementById('vt-all-btn');"
         "function syncAllBtn(){"
         "var setBtns=document.querySelectorAll('.vt-set-btn');"
@@ -423,7 +403,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         "view.signal(btn.dataset.signal,next).run();"
         "});"
         "});"
-        # Individual set buttons — also sync the All button after each click
         "document.querySelectorAll('.vt-set-btn').forEach(function(btn){"
         "btn.addEventListener('click',function(){"
         "var active=this.classList.toggle('active');"
@@ -443,7 +422,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
     )
     html = html.replace("</head>", css + js + "</head>", 1)
 
-    # Wrap sidebar + vis in a flex row
     html = re.sub(
         r'(<div id="vis"></div>)',
         '<div style="display:flex;align-items:flex-start;gap:20px;padding:12px">'
@@ -465,7 +443,7 @@ def save_chart(session: str) -> None:
     set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_vowel_space.html"
-    html: str = build_chart(session).to_html()
+    html: str = build_chart(df, session).to_html()
     html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
     print(f"Created {out_path}")

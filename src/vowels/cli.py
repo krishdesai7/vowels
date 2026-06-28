@@ -9,6 +9,7 @@ from . import (
     label_textgrid,
     make_nucleus_points,
     save_bark_chart,
+    save_bark_projections,
     save_chart,
 )
 
@@ -88,8 +89,14 @@ def plot(session: str) -> None:
 
 @app.command()
 def bark(session: str) -> None:
-    """Generate interactive Bark Z vowel space HTML from existing formants CSV."""
+    """Generate interactive Bark Z 3D vowel space HTML from existing formants CSV."""
     save_bark_chart(session)
+
+
+@app.command()
+def projections(session: str) -> None:
+    """Generate three 2D Bark Z projection plots (Frontness×Openness, ×Roundness, Openness×Roundness)."""
+    save_bark_projections(session)
 
 
 @app.command()
@@ -118,3 +125,4 @@ def run(
     extract_formants(session, gender)
     save_chart(session)
     save_bark_chart(session)
+    save_bark_projections(session)

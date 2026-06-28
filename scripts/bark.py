@@ -36,10 +36,20 @@ def validate_input_file(input_file: Path) -> Path:
     raise typer.BadParameter("Input file must be a CSV or Parquet file.")
 
 
-def resolve_output_file(output: Path | None, input_file: Path) -> Path:
+def parquet_filename(input_file: Path, save_all: bool) -> str:
+    if save_all:
+        return f"{input_file.stem}_all.parquet"
+    return input_file.with_suffix(".parquet").name
+
+
+def resolve_output_file(
+    output: Path | None, input_file: Path, save_all: bool = False
+) -> Path:
     output = output or input_file.parent
     if output.is_dir():
-        output /= input_file.with_suffix(".parquet").name
+        output /= parquet_filename(input_file, save_all)
+    elif save_all:
+        output = output.with_name(f"{output.stem}_all.parquet")
     if output.suffix.lower() == ".parquet":
         target: Path = output if output.exists() else output.parent
         if target.exists():
@@ -72,12 +82,20 @@ def main(
             help="Output directory or parquet file to write the transformed data to.",
         ),
     ] = None,
+    save_all: Annotated[
+        bool,
+        typer.Option(
+            "--all",
+            "-a",
+            help="Save all columns to a *_all.parquet file instead of the default subset.",
+        ),
+    ] = False,
 ) -> None:
     scan: Callable[[Path], pl.LazyFrame] = (
         pl.scan_parquet if input_file.suffix.lower() == ".parquet" else pl.scan_csv
     )
-    output_file: Path = resolve_output_file(output, input_file)
-    (
+    output_file: Path = resolve_output_file(output, input_file, save_all)
+    frame: pl.LazyFrame = (
         scan(input_file)
         .with_columns(formant_midpoints(i) for i in range(0, 4))
         .with_columns(bark_normalize(i) for i in range(0, 4))
@@ -86,7 +104,9 @@ def main(
             Frontness=pl.col.Z2 - pl.col.Z1,
             Roundness=pl.col.Z3 - pl.col.Z2,
         )
-        .select(
+    )
+    if not save_all:
+        frame = frame.select(
             "label",
             "category",
             "F0",
@@ -97,8 +117,7 @@ def main(
             "Frontness",
             "Roundness",
         )
-        .sink_parquet(output_file)
-    )
+    frame.sink_parquet(output_file)
 
 
 if __name__ == "__main__":

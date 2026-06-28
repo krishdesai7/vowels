@@ -1,11 +1,13 @@
 from pathlib import Path
 
+import altair as alt
 import plotly.graph_objects as go
 import polars as pl
 
 from ..paths import project_root, session_dir
 from ..schema import Wells
-from .vowel_space import _text_color
+from .ellipse import precompute_ellipse
+from .vowel_space import _inject_controls, _text_color
 
 DIV_ID = "bark-plot"
 
@@ -367,5 +369,220 @@ def save_bark_chart(session: str) -> None:
     html = _inject_bark_controls(html, has_diph=has_diph, set_colors=set_colors)
 
     out_path: Path = session_dir(session) / f"{session}_bark_space.html"
+    out_path.write_text(html)
+    print(f"Created {out_path}")
+
+
+# ── 2-D projections ──────────────────────────────────────────────────────────
+
+_AXIS_TITLES = {
+    "Frontness": "Frontness (Z2−Z1)",
+    "Openness":  "Openness (Z1−Z0)",
+    "Roundness": "Roundness (Z3−Z2)",
+}
+
+# Mirror the IPA vowel chart convention: front vowels left, open vowels down.
+_AXIS_REVERSED = {"Frontness": True, "Openness": True, "Roundness": False}
+
+
+def _projection_chart(
+    mono_df: pl.DataFrame,
+    diph_df: pl.DataFrame,
+    std_df: pl.DataFrame,
+    x_col: str,
+    y_col: str,
+    color_scale: alt.Scale,
+    mono_vis: str,
+    means_vis: str,
+    ellipse_vis: str,
+    diph_vis: str,
+    diph_means_vis: str,
+    has_diph: bool,
+) -> alt.LayerChart:
+    x_enc = alt.X(
+        f"{x_col}:Q",
+        scale=alt.Scale(reverse=_AXIS_REVERSED[x_col]),
+        title=_AXIS_TITLES[x_col],
+    )
+    y_enc = alt.Y(
+        f"{y_col}:Q",
+        scale=alt.Scale(reverse=_AXIS_REVERSED[y_col]),
+        title=_AXIS_TITLES[y_col],
+    )
+
+    ref_layer = (
+        alt.Chart(std_df)
+        .mark_text(color="#c0c0c0", fontSize=11, fontWeight="bold")
+        .encode(x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                text="label:N")
+    )
+
+    # Confidence ellipses
+    ellipse_records: list[dict] = []
+    for s in sorted(mono_df["set"].unique().to_list()):
+        subset = mono_df.filter(pl.col("set") == s)
+        if len(subset) < 3:
+            continue
+        pts = precompute_ellipse(subset[x_col].to_numpy(), subset[y_col].to_numpy())
+        if pts:
+            for k, pt in enumerate(pts):
+                ellipse_records.append({"set": s, x_col: pt["F2"], y_col: pt["F1"], "idx": k})
+
+    layers: list[alt.Chart] = [ref_layer]
+    if ellipse_records:
+        layers.append(
+            alt.Chart(pl.DataFrame(ellipse_records))
+            .mark_line(filled=True, fillOpacity=0.12, strokeWidth=1.5)
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                detail="set:N",
+                order=alt.Order("idx:O"),
+                opacity=alt.when(ellipse_vis).then(alt.value(0.7)).otherwise(alt.value(0.0)),
+            )
+        )
+
+    layers.append(
+        alt.Chart(mono_df)
+        .mark_circle(size=60, stroke="white", strokeWidth=0.5)
+        .encode(
+            x=x_enc,
+            y=y_enc,
+            color=alt.Color("set:N", scale=color_scale, legend=alt.Legend(title="Lexical set")),
+            opacity=alt.when(mono_vis).then(alt.value(0.85)).otherwise(alt.value(0.0)),
+            tooltip=[
+                alt.Tooltip("word:N", title="Word"),
+                alt.Tooltip("set:N", title="Set"),
+                alt.Tooltip(f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"),
+                alt.Tooltip(f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"),
+            ],
+        )
+    )
+
+    means_df = mono_df.group_by("set").agg(
+        pl.col(x_col).mean(), pl.col(y_col).mean()
+    )
+    layers.append(
+        alt.Chart(means_df)
+        .mark_point(shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5)
+        .encode(
+            x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+            y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+            color=alt.Color("set:N", scale=color_scale, legend=None),
+            opacity=alt.when(means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0)),
+            tooltip=[
+                alt.Tooltip("set:N", title="Set"),
+                alt.Tooltip(f"{x_col}:Q", title=f"{_AXIS_TITLES[x_col]} mean", format=".2f"),
+                alt.Tooltip(f"{y_col}:Q", title=f"{_AXIS_TITLES[y_col]} mean", format=".2f"),
+            ],
+        )
+    )
+
+    if has_diph and len(diph_df) > 0:
+        diph_means_df = (
+            diph_df.group_by(["set", "point_num"])
+            .agg(pl.col(x_col).mean(), pl.col(y_col).mean())
+            .sort(["set", "point_num"])
+        )
+        layers.append(
+            alt.Chart(diph_df)
+            .mark_trail()
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                size=alt.Size("point_num:Q", scale=alt.Scale(domain=[1, 2], range=[1, 4]), legend=None),
+                detail="token:N",
+                order=alt.Order("point_num:O"),
+                opacity=alt.when(diph_vis).then(alt.value(0.6)).otherwise(alt.value(0.0)),
+            )
+        )
+        layers.append(
+            alt.Chart(diph_means_df)
+            .mark_trail()
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                size=alt.Size("point_num:Q", scale=alt.Scale(domain=[1, 2], range=[3, 9]), legend=None),
+                detail="set:N",
+                order=alt.Order("point_num:O"),
+                opacity=alt.when(diph_means_vis).then(alt.value(0.9)).otherwise(alt.value(0.0)),
+            )
+        )
+
+    return (
+        alt.layer(*layers)
+        .resolve_scale(x="shared", y="shared")
+        .properties(width=380, height=380, title=f"{x_col} × {y_col}")
+    )
+
+
+def build_bark_projections(session: str) -> alt.HConcatChart:
+    df = pl.read_csv(session_dir(session) / f"{session}_formants.csv")
+    df = _add_bark_dims(df)
+    df = df.filter(pl.col("F0").is_not_nan())
+
+    is_diph = pl.col("label").str.contains(":")
+    mono_df = df.filter(~is_diph)
+    diph_df = df.filter(is_diph)
+    has_diph = len(diph_df) > 0
+
+    if has_diph:
+        diph_df = diph_df.with_columns(
+            pl.col("label").str.split(":").list.first().alias("token"),
+            pl.col("label").str.split(":").list.last().cast(pl.Int32).alias("point_num"),
+        )
+
+    all_sets = sorted(df["set"].unique().to_list())
+    color_scale = alt.Scale(domain=all_sets, range=[Wells[s].value for s in all_sets])
+
+    words_param = alt.param(name="showWords", value=True)
+    means_param = alt.param(name="showMeans", value=True)
+    mono_param  = alt.param(name="showMono",  value=True)
+    diph_param  = alt.param(name="showDiph",  value=True)
+    set_params  = {s: alt.param(name=f"show_{s}", value=True) for s in all_sets}
+
+    _sets = " && ".join(f'(datum.set === "{s}" ? show_{s} : true)' for s in all_sets)
+    mono_vis       = f"showWords && showMono && ({_sets})"
+    means_vis      = f"showMeans && showMono && ({_sets})"
+    ellipse_vis    = f"showMono && ({_sets})"
+    diph_vis       = f"showWords && showDiph && ({_sets})"
+    diph_means_vis = f"showMeans && showDiph && ({_sets})"
+
+    std_path: Path = project_root() / "male_standard.parquet"
+    std_df = pl.read_parquet(std_path).drop_nulls(subset=["Frontness", "Roundness"])
+    if "Closeness" in std_df.columns:
+        std_df = std_df.rename({"Closeness": "Openness"})
+
+    kwargs = dict(
+        mono_df=mono_df, diph_df=diph_df, std_df=std_df,
+        color_scale=color_scale,
+        mono_vis=mono_vis, means_vis=means_vis, ellipse_vis=ellipse_vis,
+        diph_vis=diph_vis, diph_means_vis=diph_means_vis, has_diph=has_diph,
+    )
+    proj_fo = _projection_chart(x_col="Frontness", y_col="Openness",  **kwargs)
+    proj_fr = _projection_chart(x_col="Frontness", y_col="Roundness", **kwargs)
+    proj_or = _projection_chart(x_col="Openness",  y_col="Roundness", **kwargs)
+
+    return (
+        alt.hconcat(proj_fo, proj_fr, proj_or)
+        .add_params(words_param, means_param, mono_param, diph_param, *set_params.values())
+        .properties(title=f"Bark Z Projections — {session}")
+        .configure_view(strokeWidth=0)
+    )
+
+
+def save_bark_projections(session: str) -> None:
+    df = pl.read_csv(session_dir(session) / f"{session}_formants.csv")
+    has_diph = df["label"].str.contains(":").any()
+    all_sets = sorted(df["set"].unique().to_list())
+    set_colors = {s: Wells[s].value for s in all_sets}
+
+    out_path: Path = session_dir(session) / f"{session}_bark_projections.html"
+    html = build_bark_projections(session).to_html()
+    html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
     print(f"Created {out_path}")

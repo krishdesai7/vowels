@@ -27,8 +27,10 @@ def _add_bark_dims(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _load_formants(session: str) -> pl.DataFrame:
+    from ..aggregate import load_points
+
     return (
-        pl.read_parquet(session_dir(session) / f"{session}_formants.parquet")
+        load_points(session)
         .pipe(_add_bark_dims)
         .filter(pl.col("F0").is_not_nan())
     )

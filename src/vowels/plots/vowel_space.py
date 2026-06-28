@@ -435,9 +435,9 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
 
 
 def save_chart(session: str) -> None:
-    df: pl.DataFrame = pl.read_parquet(
-        session_dir(session) / f"{session}_formants.parquet"
-    )
+    from ..aggregate import load_points
+
+    df: pl.DataFrame = load_points(session)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}

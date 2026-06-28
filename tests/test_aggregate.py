@@ -2,7 +2,7 @@ import numpy as np
 import polars as pl
 import pytest
 
-from vowels.aggregate import collapse_token, steady_state_index
+from vowels.aggregate import collapse_token, points_from_trajectory, steady_state_index
 
 
 def test_picks_flat_region_in_center() -> None:
@@ -100,3 +100,25 @@ def test_nan_f0_falls_back_to_token_mean() -> None:
     # The chosen steady-state frame (index 1) has NaN F0, so the fallback to
     # the token mean of finite F0 values (110, 130, 130, 110) must fire.
     assert rows[0]["F0"] == pytest.approx(120.0)
+
+
+def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
+    rel = list(np.linspace(0.0, 1.0, 11))
+    def block(token_id, label, f1, f2):
+        return pl.DataFrame({
+            "token_id": [token_id] * 11,
+            "label": [label] * 11,
+            "rel_time": rel,
+            "F0": [120.0] * 11,
+            "F1_s": [float(f1)] * 11,
+            "F2_s": [float(f2)] * 11,
+            "F3_s": [2500.0] * 11,
+        })
+    traj = pl.concat([
+        block(0, "TRAP_cat", 700, 1600),
+        block(1, "PRICE_buy", 400, 2200),
+    ])
+    points = points_from_trajectory(traj)
+    assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
+    labels = sorted(points["label"].to_list())
+    assert labels == ["PRICE_buy:1", "PRICE_buy:2", "TRAP_cat"]

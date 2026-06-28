@@ -40,6 +40,10 @@ def winner_to_rows(
     t1: float,
     t2: float,
 ) -> list[dict]:
+    if len(f0) != winner_df.height:
+        raise ValueError(
+            f"f0 length {len(f0)} != winner_df rows {winner_df.height}"
+        )
     normalized, disyll = normalize_label(label)
     set_name = get_set_name(normalized)
     word = normalized.split("_", 1)[1] if "_" in normalized else ""

@@ -89,6 +89,12 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
     f0 = np.array([120.0, 121.0, 119.0])
     rows = winner_to_rows(winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2)
     assert len(rows) == 3
+    EXPECTED_KEYS = {
+        "token_id", "label", "set", "word", "is_diphthong", "is_disyllabic",
+        "time", "rel_time", "F0", "F1", "F2", "F3", "F1_s", "F2_s", "F3_s",
+        "B1", "B2", "B3", "max_formant", "error",
+    }
+    assert set(rows[0].keys()) == EXPECTED_KEYS
     assert rows[0]["token_id"] == 7
     assert rows[0]["set"] == "haPPY"
     assert rows[0]["word"] == "coffee"
@@ -97,3 +103,18 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
     assert rows[0]["rel_time"] == pytest.approx(0.0)
     assert rows[2]["rel_time"] == pytest.approx(1.0)
     assert rows[0]["F0"] == pytest.approx(120.0)
+    assert rows[1]["F0"] == pytest.approx(121.0)
+    assert rows[2]["F0"] == pytest.approx(119.0)
+
+
+def test_winner_to_rows_zero_span_guard() -> None:
+    winner = pl.DataFrame({
+        "time": [1.0], "F1": [500.0], "F2": [1500.0], "F3": [2500.0],
+        "F1_s": [500.0], "F2_s": [1500.0], "F3_s": [2500.0],
+        "B1": [50.0], "B2": [80.0], "B3": [120.0],
+        "max_formant": [5000.0], "error": [0.1],
+    })
+    rows = winner_to_rows(
+        winner, np.array([120.0]), token_id=0, label="TRAP_cat", t1=1.0, t2=1.0
+    )
+    assert rows[0]["rel_time"] == pytest.approx(0.0)

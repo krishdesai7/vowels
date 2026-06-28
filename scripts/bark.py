@@ -82,7 +82,7 @@ def main(
         .with_columns(formant_midpoints(i) for i in range(0, 4))
         .with_columns(bark_normalize(i) for i in range(0, 4))
         .with_columns(
-            Closeness=pl.col.Z1 - pl.col.Z0,
+            Openness=pl.col.Z1 - pl.col.Z0,
             Frontness=pl.col.Z2 - pl.col.Z1,
             Roundness=pl.col.Z3 - pl.col.Z2,
         )
@@ -93,7 +93,7 @@ def main(
             "F1",
             "F2",
             "F3",
-            "Closeness",
+            "Openness",
             "Frontness",
             "Roundness",
         )

@@ -3,7 +3,7 @@ from pathlib import Path
 import plotly.graph_objects as go
 import polars as pl
 
-from ..paths import session_dir
+from ..paths import project_root, session_dir
 from ..schema import Wells
 from .vowel_space import _text_color
 
@@ -39,6 +39,27 @@ def build_bark_chart(session: str) -> go.Figure:
 
     traces: list[go.BaseTraceType] = []
 
+    # IPA reference overlay
+    std_path: Path = project_root() / "male_standard.parquet"
+    std_df = pl.read_parquet(std_path)
+    if "Closeness" in std_df.columns:
+        std_df = std_df.rename({"Closeness": "Openness"})
+    std_df = std_df.drop_nulls(subset=["Openness", "Frontness", "Roundness"])
+    traces.append(
+        go.Scatter3d(
+            x=std_df["Frontness"].to_list(),
+            y=std_df["Openness"].to_list(),
+            z=std_df["Roundness"].to_list(),
+            mode="text",
+            text=std_df["label"].to_list(),
+            textfont=dict(color="#c0c0c0", size=10),
+            meta={},
+            showlegend=False,
+            hoverinfo="skip",
+            name="IPA reference",
+        )
+    )
+
     for s in all_sets:
         c = color_map[s]
         sub = mono_df.filter(pl.col("set") == s)
@@ -65,7 +86,7 @@ def build_bark_chart(session: str) -> go.Figure:
                     sub["F3"].to_list(),
                 )),
                 hovertemplate=(
-                    "<b>%{customdata[0]}</b> (%{meta[set]})<br>"
+                    f"<b>%{{customdata[0]}}</b> ({s})<br>"
                     "Openness: %{y:.2f}<br>"
                     "Frontness: %{x:.2f}<br>"
                     "Roundness: %{z:.2f}<br>"
@@ -118,7 +139,6 @@ def build_bark_chart(session: str) -> go.Figure:
             if len(sub) == 0:
                 continue
 
-            # Group by token: one line per token connecting point 1 → 2
             tokens = sub["token"].unique().to_list()
             x_segs, y_segs, z_segs = [], [], []
             for tok in tokens:
@@ -141,6 +161,7 @@ def build_bark_chart(session: str) -> go.Figure:
                         showlegend=False,
                         meta={"set": s, "vtype": "diph", "kind": "tokens"},
                         hovertemplate=(
+                            f"({s})<br>"
                             "Openness: %{y:.2f}<br>"
                             "Frontness: %{x:.2f}<br>"
                             "Roundness: %{z:.2f}"
@@ -149,7 +170,6 @@ def build_bark_chart(session: str) -> go.Figure:
                     )
                 )
 
-            # Diphthong means trajectory
             dm = (
                 diph_df.filter(pl.col("set") == s)
                 .group_by("point_num")
@@ -256,6 +276,7 @@ def _inject_bark_controls(
         "</style>"
     )
 
+    # setupToggles receives the graph div element directly (not via gd in post_script scope)
     js = (
         "<script>"
         "function setupToggles(gd){"
@@ -277,8 +298,9 @@ def _inject_bark_controls(
         "return true;"
         "}"
         "function reapply(){"
-        "Plotly.restyle(gd,{visible:gd.data.map(function(t){return isOn(t);})},"
-        "gd.data.map(function(_,i){return i;}));"
+        "var vis=gd.data.map(function(t){return isOn(t);});"
+        "var idx=gd.data.map(function(_,i){return i;});"
+        "Plotly.restyle(gd,{visible:vis},idx);"
         "}"
         "document.querySelectorAll('.vt-btn').forEach(function(btn){"
         "btn.addEventListener('click',function(){"
@@ -319,9 +341,7 @@ def _inject_bark_controls(
     )
 
     html = html.replace("</head>", css + js + "</head>", 1)
-    # Sidebar is the first element in <body>; body itself is the flex container
     html = html.replace("<body>", f"<body>{sidebar}", 1)
-    # Let the Plotly graph div fill the remaining flex space
     html = html.replace(
         'class="plotly-graph-div"',
         'class="plotly-graph-div" style="width:100%;height:700px;"',
@@ -337,11 +357,12 @@ def save_bark_chart(session: str) -> None:
     set_colors = {s: Wells[s].value for s in all_sets}
 
     fig = build_bark_chart(session)
+    # post_script runs inside .then(function(){...}) with no parameter — use getElementById
     html = fig.to_html(
         div_id=DIV_ID,
         include_plotlyjs=True,
         full_html=True,
-        post_script="setupToggles(gd);",
+        post_script=f"setupToggles(document.getElementById('{DIV_ID}'));",
     )
     html = _inject_bark_controls(html, has_diph=has_diph, set_colors=set_colors)
 

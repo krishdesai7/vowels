@@ -1,0 +1,810 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 108.97124716553287 
+tiers? <exists> 
+size = 1 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "silences" 
+        xmin = 0 
+        xmax = 108.97124716553287 
+        intervals: size = 199 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.9376235827664404 
+            text = "silent" 
+        intervals [2]:
+            xmin = 0.9376235827664404 
+            xmax = 1.5856235827664404 
+            text = "CURE_your" 
+        intervals [3]:
+            xmin = 1.5856235827664404 
+            xmax = 2.0176235827664404 
+            text = "silent" 
+        intervals [4]:
+            xmin = 2.0176235827664404 
+            xmax = 2.5456235827664404 
+            text = "GOAT_home" 
+        intervals [5]:
+            xmin = 2.5456235827664404 
+            xmax = 2.9536235827664403 
+            text = "silent" 
+        intervals [6]:
+            xmin = 2.9536235827664403 
+            xmax = 3.3056235827664406 
+            text = "DRESS_dress" 
+        intervals [7]:
+            xmin = 3.3056235827664406 
+            xmax = 4.065623582766441 
+            text = "silent" 
+        intervals [8]:
+            xmin = 4.065623582766441 
+            xmax = 4.48962358276644 
+            text = "2COMMA_comma" 
+        intervals [9]:
+            xmin = 4.48962358276644 
+            xmax = 5.137623582766441 
+            text = "silent" 
+        intervals [10]:
+            xmin = 5.137623582766441 
+            xmax = 5.6176235827664405 
+            text = "2HAPPY_coffee" 
+        intervals [11]:
+            xmin = 5.6176235827664405 
+            xmax = 6.24162358276644 
+            text = "silent" 
+        intervals [12]:
+            xmin = 6.24162358276644 
+            xmax = 6.6656235827664405 
+            text = "PRICE_try" 
+        intervals [13]:
+            xmin = 6.6656235827664405 
+            xmax = 7.29762358276644 
+            text = "silent" 
+        intervals [14]:
+            xmin = 7.29762358276644 
+            xmax = 7.6016235827664405 
+            text = "START_start" 
+        intervals [15]:
+            xmin = 7.6016235827664405 
+            xmax = 8.329623582766441 
+            text = "silent" 
+        intervals [16]:
+            xmin = 8.329623582766441 
+            xmax = 8.83362358276644 
+            text = "FORCE_door" 
+        intervals [17]:
+            xmin = 8.83362358276644 
+            xmax = 9.377623582766441 
+            text = "silent" 
+        intervals [18]:
+            xmin = 9.377623582766441 
+            xmax = 9.76162358276644 
+            text = "TRAP_bad" 
+        intervals [19]:
+            xmin = 9.76162358276644 
+            xmax = 10.505623582766441 
+            text = "silent" 
+        intervals [20]:
+            xmin = 10.505623582766441 
+            xmax = 10.81762358276644 
+            text = "CURE_cure" 
+        intervals [21]:
+            xmin = 10.81762358276644 
+            xmax = 11.44962358276644 
+            text = "silent" 
+        intervals [22]:
+            xmin = 11.44962358276644 
+            xmax = 11.75362358276644 
+            text = "KIT_ship" 
+        intervals [23]:
+            xmin = 11.75362358276644 
+            xmax = 12.537623582766441 
+            text = "silent" 
+        intervals [24]:
+            xmin = 12.537623582766441 
+            xmax = 13.121623582766441 
+            text = "CHOICE_coin" 
+        intervals [25]:
+            xmin = 13.121623582766441 
+            xmax = 13.665623582766441 
+            text = "silent" 
+        intervals [26]:
+            xmin = 13.665623582766441 
+            xmax = 14.07362358276644 
+            text = "FACE_day" 
+        intervals [27]:
+            xmin = 14.07362358276644 
+            xmax = 14.72162358276644 
+            text = "silent" 
+        intervals [28]:
+            xmin = 14.72162358276644 
+            xmax = 14.92962358276644 
+            text = "KIT_kit" 
+        intervals [29]:
+            xmin = 14.92962358276644 
+            xmax = 15.761623582766441 
+            text = "silent" 
+        intervals [30]:
+            xmin = 15.761623582766441 
+            xmax = 16.097623582766442 
+            text = "BATH_dance" 
+        intervals [31]:
+            xmin = 16.097623582766442 
+            xmax = 16.82562358276644 
+            text = "silent" 
+        intervals [32]:
+            xmin = 16.82562358276644 
+            xmax = 17.20962358276644 
+            text = "MOUTH_mouth" 
+        intervals [33]:
+            xmin = 17.20962358276644 
+            xmax = 18.05762358276644 
+            text = "silent" 
+        intervals [34]:
+            xmin = 18.05762358276644 
+            xmax = 18.417623582766442 
+            text = "CURE_sure" 
+        intervals [35]:
+            xmin = 18.417623582766442 
+            xmax = 19.15362358276644 
+            text = "silent" 
+        intervals [36]:
+            xmin = 19.15362358276644 
+            xmax = 19.58562358276644 
+            text = "NURSE_term" 
+        intervals [37]:
+            xmin = 19.58562358276644 
+            xmax = 20.23362358276644 
+            text = "silent" 
+        intervals [38]:
+            xmin = 20.23362358276644 
+            xmax = 20.56962358276644 
+            text = "PRICE_price" 
+        intervals [39]:
+            xmin = 20.56962358276644 
+            xmax = 21.289623582766442 
+            text = "silent" 
+        intervals [40]:
+            xmin = 21.289623582766442 
+            xmax = 21.66562358276644 
+            text = "CHOICE_join" 
+        intervals [41]:
+            xmin = 21.66562358276644 
+            xmax = 22.30562358276644 
+            text = "silent" 
+        intervals [42]:
+            xmin = 22.30562358276644 
+            xmax = 22.77762358276644 
+            text = "FLEECE_bleed" 
+        intervals [43]:
+            xmin = 22.77762358276644 
+            xmax = 23.24162358276644 
+            text = "silent" 
+        intervals [44]:
+            xmin = 23.24162358276644 
+            xmax = 23.609623582766442 
+            text = "DRESS_wet" 
+        intervals [45]:
+            xmin = 23.609623582766442 
+            xmax = 24.417623582766442 
+            text = "silent" 
+        intervals [46]:
+            xmin = 24.417623582766442 
+            xmax = 24.705623582766442 
+            text = "LOT_dot" 
+        intervals [47]:
+            xmin = 24.705623582766442 
+            xmax = 25.43362358276644 
+            text = "silent" 
+        intervals [48]:
+            xmin = 25.43362358276644 
+            xmax = 25.77762358276644 
+            text = "NEAR_fear" 
+        intervals [49]:
+            xmin = 25.77762358276644 
+            xmax = 26.56962358276644 
+            text = "silent" 
+        intervals [50]:
+            xmin = 26.56962358276644 
+            xmax = 26.79362358276644 
+            text = "STRUT_cup" 
+        intervals [51]:
+            xmin = 26.79362358276644 
+            xmax = 27.62562358276644 
+            text = "silent" 
+        intervals [52]:
+            xmin = 27.62562358276644 
+            xmax = 27.91362358276644 
+            text = "TRAP_tap" 
+        intervals [53]:
+            xmin = 27.91362358276644 
+            xmax = 28.74562358276644 
+            text = "silent" 
+        intervals [54]:
+            xmin = 28.74562358276644 
+            xmax = 29.00162358276644 
+            text = "FACE_bait" 
+        intervals [55]:
+            xmin = 29.00162358276644 
+            xmax = 29.82562358276644 
+            text = "silent" 
+        intervals [56]:
+            xmin = 29.82562358276644 
+            xmax = 30.17762358276644 
+            text = "START_far" 
+        intervals [57]:
+            xmin = 30.17762358276644 
+            xmax = 30.865623582766442 
+            text = "silent" 
+        intervals [58]:
+            xmin = 30.865623582766442 
+            xmax = 31.08162358276644 
+            text = "TRAP_cat" 
+        intervals [59]:
+            xmin = 31.08162358276644 
+            xmax = 31.65762358276644 
+            text = "silent" 
+        intervals [60]:
+            xmin = 31.65762358276644 
+            xmax = 31.93762358276644 
+            text = "2LETTER_letter" 
+        intervals [61]:
+            xmin = 31.93762358276644 
+            xmax = 34.57762358276644 
+            text = "silent" 
+        intervals [62]:
+            xmin = 34.57762358276644 
+            xmax = 34.88962358276644 
+            text = "FOOT_put" 
+        intervals [63]:
+            xmin = 34.88962358276644 
+            xmax = 35.44962358276644 
+            text = "silent" 
+        intervals [64]:
+            xmin = 35.44962358276644 
+            xmax = 36.00162358276644 
+            text = "NORTH_war" 
+        intervals [65]:
+            xmin = 36.00162358276644 
+            xmax = 36.44962358276644 
+            text = "silent" 
+        intervals [66]:
+            xmin = 36.44962358276644 
+            xmax = 36.817623582766444 
+            text = "LOT_got" 
+        intervals [67]:
+            xmin = 36.817623582766444 
+            xmax = 37.40962358276644 
+            text = "silent" 
+        intervals [68]:
+            xmin = 37.40962358276644 
+            xmax = 37.67362358276644 
+            text = "NURSE_hurt" 
+        intervals [69]:
+            xmin = 37.67362358276644 
+            xmax = 38.40162358276644 
+            text = "silent" 
+        intervals [70]:
+            xmin = 38.40162358276644 
+            xmax = 38.72962358276644 
+            text = "NEAR_here" 
+        intervals [71]:
+            xmin = 38.72962358276644 
+            xmax = 39.16962358276644 
+            text = "silent" 
+        intervals [72]:
+            xmin = 39.16962358276644 
+            xmax = 39.64162358276644 
+            text = "NORTH_north" 
+        intervals [73]:
+            xmin = 39.64162358276644 
+            xmax = 40.21762358276644 
+            text = "silent" 
+        intervals [74]:
+            xmin = 40.21762358276644 
+            xmax = 40.52962358276644 
+            text = "CHOICE_choice" 
+        intervals [75]:
+            xmin = 40.52962358276644 
+            xmax = 41.22562358276644 
+            text = "silent" 
+        intervals [76]:
+            xmin = 41.22562358276644 
+            xmax = 41.50562358276644 
+            text = "FACE_face" 
+        intervals [77]:
+            xmin = 41.50562358276644 
+            xmax = 42.28162358276644 
+            text = "silent" 
+        intervals [78]:
+            xmin = 42.28162358276644 
+            xmax = 42.64962358276644 
+            text = "SQUARE_care" 
+        intervals [79]:
+            xmin = 42.64962358276644 
+            xmax = 43.27362358276644 
+            text = "silent" 
+        intervals [80]:
+            xmin = 43.27362358276644 
+            xmax = 43.55362358276644 
+            text = "STRUT_trunk" 
+        intervals [81]:
+            xmin = 43.55362358276644 
+            xmax = 44.22562358276644 
+            text = "silent" 
+        intervals [82]:
+            xmin = 44.22562358276644 
+            xmax = 44.521623582766445 
+            text = "MOUTH_out" 
+        intervals [83]:
+            xmin = 44.521623582766445 
+            xmax = 45.09762358276644 
+            text = "silent" 
+        intervals [84]:
+            xmin = 45.09762358276644 
+            xmax = 45.59362358276644 
+            text = "2COMMA_quota" 
+        intervals [85]:
+            xmin = 45.59362358276644 
+            xmax = 46.16162358276644 
+            text = "silent" 
+        intervals [86]:
+            xmin = 46.16162358276644 
+            xmax = 46.52962358276644 
+            text = "SQUARE_air" 
+        intervals [87]:
+            xmin = 46.52962358276644 
+            xmax = 47.113623582766444 
+            text = "silent" 
+        intervals [88]:
+            xmin = 47.113623582766444 
+            xmax = 47.52962358276644 
+            text = "NORTH_born" 
+        intervals [89]:
+            xmin = 47.52962358276644 
+            xmax = 48.12162358276644 
+            text = "silent" 
+        intervals [90]:
+            xmin = 48.12162358276644 
+            xmax = 48.44162358276644 
+            text = "START_heart" 
+        intervals [91]:
+            xmin = 48.44162358276644 
+            xmax = 49.10562358276644 
+            text = "silent" 
+        intervals [92]:
+            xmin = 49.10562358276644 
+            xmax = 49.44162358276644 
+            text = "PALM_spa" 
+        intervals [93]:
+            xmin = 49.44162358276644 
+            xmax = 50.073623582766444 
+            text = "silent" 
+        intervals [94]:
+            xmin = 50.073623582766444 
+            xmax = 50.497623582766444 
+            text = "NORTH_storm" 
+        intervals [95]:
+            xmin = 50.497623582766444 
+            xmax = 51.03362358276644 
+            text = "silent" 
+        intervals [96]:
+            xmin = 51.03362358276644 
+            xmax = 51.31362358276644 
+            text = "TRAP_trap" 
+        intervals [97]:
+            xmin = 51.31362358276644 
+            xmax = 52.009623582766444 
+            text = "silent" 
+        intervals [98]:
+            xmin = 52.009623582766444 
+            xmax = 52.25762358276644 
+            text = "FOOT_foot" 
+        intervals [99]:
+            xmin = 52.25762358276644 
+            xmax = 52.96162358276644 
+            text = "silent" 
+        intervals [100]:
+            xmin = 52.96162358276644 
+            xmax = 53.27362358276644 
+            text = "STRUT_strut" 
+        intervals [101]:
+            xmin = 53.27362358276644 
+            xmax = 54.00162358276644 
+            text = "silent" 
+        intervals [102]:
+            xmin = 54.00162358276644 
+            xmax = 54.38562358276644 
+            text = "2LETTER_butter" 
+        intervals [103]:
+            xmin = 54.38562358276644 
+            xmax = 55.03362358276644 
+            text = "silent" 
+        intervals [104]:
+            xmin = 55.03362358276644 
+            xmax = 55.265623582766445 
+            text = "FLEECE_beat" 
+        intervals [105]:
+            xmin = 55.265623582766445 
+            xmax = 56.177623582766444 
+            text = "silent" 
+        intervals [106]:
+            xmin = 56.177623582766444 
+            xmax = 56.393623582766445 
+            text = "FLEECE_speak" 
+        intervals [107]:
+            xmin = 56.393623582766445 
+            xmax = 57.08162358276644 
+            text = "silent" 
+        intervals [108]:
+            xmin = 57.08162358276644 
+            xmax = 57.56962358276644 
+            text = "PRICE_hide" 
+        intervals [109]:
+            xmin = 57.56962358276644 
+            xmax = 58.08962358276644 
+            text = "silent" 
+        intervals [110]:
+            xmin = 58.08962358276644 
+            xmax = 58.54562358276644 
+            text = "PRICE_buy" 
+        intervals [111]:
+            xmin = 58.54562358276644 
+            xmax = 59.16962358276644 
+            text = "silent" 
+        intervals [112]:
+            xmin = 59.16962358276644 
+            xmax = 59.56962358276644 
+            text = "SQUARE_fair" 
+        intervals [113]:
+            xmin = 59.56962358276644 
+            xmax = 60.19362358276644 
+            text = "silent" 
+        intervals [114]:
+            xmin = 60.19362358276644 
+            xmax = 60.48162358276644 
+            text = "THOUGHT_taught" 
+        intervals [115]:
+            xmin = 60.48162358276644 
+            xmax = 61.12162358276644 
+            text = "silent" 
+        intervals [116]:
+            xmin = 61.12162358276644 
+            xmax = 61.521623582766445 
+            text = "THOUGHT_jaw" 
+        intervals [117]:
+            xmin = 61.521623582766445 
+            xmax = 61.96162358276644 
+            text = "silent" 
+        intervals [118]:
+            xmin = 61.96162358276644 
+            xmax = 62.393623582766445 
+            text = "NURSE_nurse" 
+        intervals [119]:
+            xmin = 62.393623582766445 
+            xmax = 63.04162358276644 
+            text = "silent" 
+        intervals [120]:
+            xmin = 63.04162358276644 
+            xmax = 63.33762358276644 
+            text = "THOUGHT_caught" 
+        intervals [121]:
+            xmin = 63.33762358276644 
+            xmax = 67.17762358276644 
+            text = "silent" 
+        intervals [122]:
+            xmin = 67.17762358276644 
+            xmax = 67.57762358276644 
+            text = "LOT_lot" 
+        intervals [123]:
+            xmin = 67.57762358276644 
+            xmax = 68.33762358276644 
+            text = "silent" 
+        intervals [124]:
+            xmin = 68.33762358276644 
+            xmax = 68.57762358276644 
+            text = "DRESS_step" 
+        intervals [125]:
+            xmin = 68.57762358276644 
+            xmax = 69.15362358276644 
+            text = "silent" 
+        intervals [126]:
+            xmin = 69.15362358276644 
+            xmax = 69.61762358276644 
+            text = "NEAR_near" 
+        intervals [127]:
+            xmin = 69.61762358276644 
+            xmax = 70.30562358276644 
+            text = "silent" 
+        intervals [128]:
+            xmin = 70.30562358276644 
+            xmax = 70.53762358276644 
+            text = "GOOSE_tooth" 
+        intervals [129]:
+            xmin = 70.53762358276644 
+            xmax = 71.28962358276644 
+            text = "silent" 
+        intervals [130]:
+            xmin = 71.28962358276644 
+            xmax = 71.57762358276644 
+            text = "LOT_stop" 
+        intervals [131]:
+            xmin = 71.57762358276644 
+            xmax = 72.21762358276644 
+            text = "silent" 
+        intervals [132]:
+            xmin = 72.21762358276644 
+            xmax = 72.61762358276644 
+            text = "PALM_psalm" 
+        intervals [133]:
+            xmin = 72.61762358276644 
+            xmax = 73.15362358276644 
+            text = "silent" 
+        intervals [134]:
+            xmin = 73.15362358276644 
+            xmax = 73.57762358276644 
+            text = "2LETTER_paper" 
+        intervals [135]:
+            xmin = 73.57762358276644 
+            xmax = 74.15362358276644 
+            text = "silent" 
+        intervals [136]:
+            xmin = 74.15362358276644 
+            xmax = 74.40162358276645 
+            text = "KIT_sit" 
+        intervals [137]:
+            xmin = 74.40162358276645 
+            xmax = 75.08962358276644 
+            text = "silent" 
+        intervals [138]:
+            xmin = 75.08962358276644 
+            xmax = 75.42562358276645 
+            text = "FLEECE_feel" 
+        intervals [139]:
+            xmin = 75.42562358276645 
+            xmax = 75.96162358276644 
+            text = "silent" 
+        intervals [140]:
+            xmin = 75.96162358276644 
+            xmax = 76.39362358276644 
+            text = "GOOSE_goose" 
+        intervals [141]:
+            xmin = 76.39362358276644 
+            xmax = 77.01762358276645 
+            text = "silent" 
+        intervals [142]:
+            xmin = 77.01762358276645 
+            xmax = 77.40962358276644 
+            text = "NURSE_work" 
+        intervals [143]:
+            xmin = 77.40962358276644 
+            xmax = 78.06562358276645 
+            text = "silent" 
+        intervals [144]:
+            xmin = 78.06562358276645 
+            xmax = 78.28962358276644 
+            text = "FOOT_book" 
+        intervals [145]:
+            xmin = 78.28962358276644 
+            xmax = 79.05762358276644 
+            text = "silent" 
+        intervals [146]:
+            xmin = 79.05762358276644 
+            xmax = 79.40962358276644 
+            text = "CHOICE_boy" 
+        intervals [147]:
+            xmin = 79.40962358276644 
+            xmax = 80.12962358276644 
+            text = "silent" 
+        intervals [148]:
+            xmin = 80.12962358276644 
+            xmax = 80.39362358276644 
+            text = "GOAT_boat" 
+        intervals [149]:
+            xmin = 80.39362358276644 
+            xmax = 81.17762358276644 
+            text = "silent" 
+        intervals [150]:
+            xmin = 81.17762358276644 
+            xmax = 81.45762358276644 
+            text = "CLOTH_boss" 
+        intervals [151]:
+            xmin = 81.45762358276644 
+            xmax = 82.32162358276645 
+            text = "silent" 
+        intervals [152]:
+            xmin = 82.32162358276645 
+            xmax = 82.82562358276644 
+            text = "2COMMA_sofa" 
+        intervals [153]:
+            xmin = 82.82562358276644 
+            xmax = 83.39362358276644 
+            text = "silent" 
+        intervals [154]:
+            xmin = 83.39362358276644 
+            xmax = 83.70562358276644 
+            text = "FORCE_force" 
+        intervals [155]:
+            xmin = 83.70562358276644 
+            xmax = 84.33762358276644 
+            text = "silent" 
+        intervals [156]:
+            xmin = 84.33762358276644 
+            xmax = 84.85762358276644 
+            text = "GOAT_know" 
+        intervals [157]:
+            xmin = 84.85762358276644 
+            xmax = 85.41762358276644 
+            text = "silent" 
+        intervals [158]:
+            xmin = 85.41762358276644 
+            xmax = 85.73762358276645 
+            text = "2HAPPY_city" 
+        intervals [159]:
+            xmin = 85.73762358276645 
+            xmax = 86.28162358276644 
+            text = "silent" 
+        intervals [160]:
+            xmin = 86.28162358276644 
+            xmax = 86.85762358276644 
+            text = "NEAR_beer" 
+        intervals [161]:
+            xmin = 86.85762358276644 
+            xmax = 87.48962358276644 
+            text = "silent" 
+        intervals [162]:
+            xmin = 87.48962358276644 
+            xmax = 87.80162358276644 
+            text = "MOUTH_cow" 
+        intervals [163]:
+            xmin = 87.80162358276644 
+            xmax = 88.48162358276645 
+            text = "silent" 
+        intervals [164]:
+            xmin = 88.48162358276645 
+            xmax = 88.89762358276644 
+            text = "PALM_palm" 
+        intervals [165]:
+            xmin = 88.89762358276644 
+            xmax = 89.52162358276644 
+            text = "silent" 
+        intervals [166]:
+            xmin = 89.52162358276644 
+            xmax = 89.84162358276645 
+            text = "CLOTH_cloth" 
+        intervals [167]:
+            xmin = 89.84162358276645 
+            xmax = 90.49762358276644 
+            text = "silent" 
+        intervals [168]:
+            xmin = 90.49762358276644 
+            xmax = 90.91362358276645 
+            text = "FLEECE_bleed" 
+        intervals [169]:
+            xmin = 90.91362358276645 
+            xmax = 91.48962358276644 
+            text = "silent" 
+        intervals [170]:
+            xmin = 91.48962358276644 
+            xmax = 91.80162358276644 
+            text = "CLOTH_cross" 
+        intervals [171]:
+            xmin = 91.80162358276644 
+            xmax = 92.54562358276644 
+            text = "silent" 
+        intervals [172]:
+            xmin = 92.54562358276644 
+            xmax = 92.97762358276644 
+            text = "2HAPPY_happy" 
+        intervals [173]:
+            xmin = 92.97762358276644 
+            xmax = 93.53762358276644 
+            text = "silent" 
+        intervals [174]:
+            xmin = 93.53762358276644 
+            xmax = 93.86562358276645 
+            text = "GOOSE_food" 
+        intervals [175]:
+            xmin = 93.86562358276645 
+            xmax = 94.41762358276644 
+            text = "silent" 
+        intervals [176]:
+            xmin = 94.41762358276644 
+            xmax = 94.91362358276645 
+            text = "DRESS_bed" 
+        intervals [177]:
+            xmin = 94.91362358276645 
+            xmax = 95.55362358276645 
+            text = "silent" 
+        intervals [178]:
+            xmin = 95.55362358276645 
+            xmax = 95.80962358276645 
+            text = "FLEECE_fleece" 
+        intervals [179]:
+            xmin = 95.80962358276645 
+            xmax = 98.04962358276644 
+            text = "silent" 
+        intervals [180]:
+            xmin = 98.04962358276644 
+            xmax = 98.48162358276645 
+            text = "GOAT_goat" 
+        intervals [181]:
+            xmin = 98.48162358276645 
+            xmax = 99.22562358276645 
+            text = "silent" 
+        intervals [182]:
+            xmin = 99.22562358276645 
+            xmax = 99.52162358276644 
+            text = "THOUGHT_thought" 
+        intervals [183]:
+            xmin = 99.52162358276644 
+            xmax = 100.08162358276644 
+            text = "silent" 
+        intervals [184]:
+            xmin = 100.08162358276644 
+            xmax = 100.51362358276644 
+            text = "BATH_bath" 
+        intervals [185]:
+            xmin = 100.51362358276644 
+            xmax = 101.26562358276644 
+            text = "silent" 
+        intervals [186]:
+            xmin = 101.26562358276644 
+            xmax = 101.61762358276644 
+            text = "SQUARE_square" 
+        intervals [187]:
+            xmin = 101.61762358276644 
+            xmax = 102.23362358276644 
+            text = "silent" 
+        intervals [188]:
+            xmin = 102.23362358276644 
+            xmax = 102.54562358276644 
+            text = "BATH_path" 
+        intervals [189]:
+            xmin = 102.54562358276644 
+            xmax = 103.22562358276645 
+            text = "silent" 
+        intervals [190]:
+            xmin = 103.22562358276645 
+            xmax = 103.54562358276644 
+            text = "CURE_pure" 
+        intervals [191]:
+            xmin = 103.54562358276644 
+            xmax = 104.13762358276644 
+            text = "silent" 
+        intervals [192]:
+            xmin = 104.13762358276644 
+            xmax = 104.50562358276645 
+            text = "FOOT_good" 
+        intervals [193]:
+            xmin = 104.50562358276645 
+            xmax = 105.14562358276645 
+            text = "silent" 
+        intervals [194]:
+            xmin = 105.14562358276645 
+            xmax = 105.40162358276645 
+            text = "KIT_bit" 
+        intervals [195]:
+            xmin = 105.40162358276645 
+            xmax = 106.07362358276644 
+            text = "silent" 
+        intervals [196]:
+            xmin = 106.07362358276644 
+            xmax = 106.36962358276644 
+            text = "FORCE_porch" 
+        intervals [197]:
+            xmin = 106.36962358276644 
+            xmax = 106.86562358276645 
+            text = "silent" 
+        intervals [198]:
+            xmin = 106.86562358276645 
+            xmax = 107.03362358276644 
+            text = "PALM_calm" 
+        intervals [199]:
+            xmin = 107.03362358276644 
+            xmax = 108.97124716553287 
+            text = "silent" 

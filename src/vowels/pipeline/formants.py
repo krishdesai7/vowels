@@ -1,8 +1,14 @@
 from pathlib import Path
 
+import numpy as np
 import parselmouth
 import polars as pl
 
+from ..labels import (
+    get_set_name,
+    is_diphthong_set,
+    normalize_label,
+)
 from ..paths import session_dir
 from ..schema import Gender
 
@@ -24,6 +30,41 @@ def parse_labels(df: pl.LazyFrame) -> pl.LazyFrame:
         )
         .drop(["raw_set", "raw_word"])
     )
+
+
+def winner_to_rows(
+    winner_df: pl.DataFrame,
+    f0: np.ndarray,
+    token_id: int,
+    label: str,
+    t1: float,
+    t2: float,
+) -> list[dict]:
+    normalized, disyll = normalize_label(label)
+    set_name = get_set_name(normalized)
+    word = normalized.split("_", 1)[1] if "_" in normalized else ""
+    diph = is_diphthong_set(set_name)
+    span = (t2 - t1) or 1.0
+    rows: list[dict] = []
+    for i, frame in enumerate(winner_df.iter_rows(named=True)):
+        rows.append(
+            {
+                "token_id": token_id,
+                "label": label,
+                "set": set_name,
+                "word": word,
+                "is_diphthong": diph,
+                "is_disyllabic": disyll,
+                "time": frame["time"],
+                "rel_time": (frame["time"] - t1) / span,
+                "F0": float(f0[i]),
+                "F1": frame["F1"], "F2": frame["F2"], "F3": frame["F3"],
+                "F1_s": frame["F1_s"], "F2_s": frame["F2_s"], "F3_s": frame["F3_s"],
+                "B1": frame["B1"], "B2": frame["B2"], "B3": frame["B3"],
+                "max_formant": frame["max_formant"], "error": frame["error"],
+            }
+        )
+    return rows
 
 
 def extract_formants(session: str, gender: Gender = Gender.M) -> None:

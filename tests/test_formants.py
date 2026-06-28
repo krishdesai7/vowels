@@ -1,9 +1,11 @@
 from typing import Final
 
+import numpy as np
 import polars as pl
 import pytest
 
 from vowels import parse_labels
+from vowels.pipeline.formants import winner_to_rows
 
 REQUIRED_COLUMNS: Final[set[str]] = {"time", "label", "F1", "F2", "F3", "set", "word"}
 
@@ -72,3 +74,26 @@ def test_time_and_formant_columns_preserved() -> None:
     assert df.select(pl.col("F3")).unique().collect().get_column("F3").to_list()[
         0
     ] == pytest.approx(2500.0)
+
+
+def test_winner_to_rows_schema_and_rel_time() -> None:
+    winner = pl.DataFrame({
+        "time": [1.0, 1.1, 1.2],
+        "F1": [500.0, 510.0, 505.0], "F2": [1500.0, 1490.0, 1495.0],
+        "F3": [2500.0, 2510.0, 2505.0],
+        "F1_s": [502.0, 508.0, 506.0], "F2_s": [1498.0, 1492.0, 1496.0],
+        "F3_s": [2502.0, 2508.0, 2506.0],
+        "B1": [50.0, 51.0, 52.0], "B2": [80.0, 81.0, 82.0], "B3": [120.0, 121.0, 122.0],
+        "max_formant": [5000.0] * 3, "error": [0.1] * 3,
+    })
+    f0 = np.array([120.0, 121.0, 119.0])
+    rows = winner_to_rows(winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2)
+    assert len(rows) == 3
+    assert rows[0]["token_id"] == 7
+    assert rows[0]["set"] == "haPPY"
+    assert rows[0]["word"] == "coffee"
+    assert rows[0]["is_disyllabic"] is True
+    assert rows[0]["is_diphthong"] is False
+    assert rows[0]["rel_time"] == pytest.approx(0.0)
+    assert rows[2]["rel_time"] == pytest.approx(1.0)
+    assert rows[0]["F0"] == pytest.approx(120.0)

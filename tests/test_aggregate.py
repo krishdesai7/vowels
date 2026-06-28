@@ -1,5 +1,6 @@
 import numpy as np
 import polars as pl
+import pytest
 
 from vowels.aggregate import collapse_token, steady_state_index
 
@@ -93,7 +94,9 @@ def test_disyllabic_targets_second_syllable_window() -> None:
 
 def test_nan_f0_falls_back_to_token_mean() -> None:
     rel = np.linspace(0.0, 1.0, 5)
-    f0 = [110.0, 130.0, float("nan"), 130.0, 110.0]
+    f0 = [110.0, float("nan"), 130.0, 130.0, 110.0]
     df = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
     rows = collapse_token(df, "KIT_bit")
-    assert rows[0]["F0"] > 0  # not NaN
+    # The chosen steady-state frame (index 1) has NaN F0, so the fallback to
+    # the token mean of finite F0 values (110, 130, 130, 110) must fire.
+    assert rows[0]["F0"] == pytest.approx(120.0)

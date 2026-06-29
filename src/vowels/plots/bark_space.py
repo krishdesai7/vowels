@@ -29,11 +29,7 @@ def _add_bark_dims(df: pl.DataFrame) -> pl.DataFrame:
 def _load_formants(session: str) -> pl.DataFrame:
     from ..aggregate import load_points
 
-    return (
-        load_points(session)
-        .pipe(_add_bark_dims)
-        .filter(pl.col("F0").is_not_nan())
-    )
+    return load_points(session).pipe(_add_bark_dims).filter(pl.col("F0").is_not_nan())
 
 
 def _proj_angle_expr(

@@ -4,6 +4,7 @@ from pathlib import Path
 import altair as alt
 import polars as pl
 
+from ..aggregate import load_points
 from ..paths import data_dir, session_dir
 from ..schema import GROUPS, Wells
 from .ellipse import precompute_ellipse
@@ -122,11 +123,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 4: Per-set means (monophthongs only)
     layers.append(
-        alt.Chart(
-            mono_df.group_by("set").agg(
-                pl.col("F1").mean(), pl.col("F2").mean()
-            )
-        )
+        alt.Chart(mono_df.group_by("set").agg(pl.col("F1").mean(), pl.col("F2").mean()))
         .mark_point(
             shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
         )
@@ -169,10 +166,14 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
         W, H = 650.0, 550.0
 
         def _angle_expr() -> pl.Expr:
-            return pl.arctan2(
-                -(pl.col("F2") - pl.col("F2_s")) / F2_rng * W,
-                -(pl.col("F1") - pl.col("F1_s")) / F1_rng * H,
-            ).degrees().alias("angle")
+            return (
+                pl.arctan2(
+                    -(pl.col("F2") - pl.col("F2_s")) / F2_rng * W,
+                    -(pl.col("F1") - pl.col("F1_s")) / F1_rng * H,
+                )
+                .degrees()
+                .alias("angle")
+            )
 
         pt1_t: pl.DataFrame = diph_df.filter(pl.col("point_num") == 1)[
             ["token", "set", "F1", "F2"]
@@ -190,9 +191,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
         pt2_m: pl.DataFrame = diph_means_df.filter(pl.col("point_num") == 2)[
             ["set", "F1", "F2"]
         ]
-        mean_arr: pl.DataFrame = pt2_m.join(pt1_m, on="set").with_columns(
-            _angle_expr()
-        )
+        mean_arr: pl.DataFrame = pt2_m.join(pt1_m, on="set").with_columns(_angle_expr())
 
         ang_scale: alt.Scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
 
@@ -297,18 +296,18 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         return f'<button class="vt-btn active" data-signal="{sig}">{label}</button>'
 
     def set_btn(name: str, color: str) -> str:
-        tc = _text_color(color)
+        tc: str = _text_color(color)
         return (
             f'<button class="vt-set-btn active" data-signal="show_{name}" '
             f'style="background:{color};color:{tc}">{name}</button>'
         )
 
-    display_html = btn("showWords", "Words") + btn("showMeans", "Set averages")
-    type_html = btn("showMono", "Monophthongs")
+    display_html: str = btn("showWords", "Words") + btn("showMeans", "Set averages")
+    type_html: str = btn("showMono", "Monophthongs")
     if has_diph:
         type_html += btn("showDiph", "Diphthongs")
 
-    groups_with_data = [
+    groups_with_data: list[tuple[str, str]] = [
         (
             grp_name,
             "".join(set_btn(s, set_colors[s]) for s in grp_sets if s in set_colors),
@@ -316,21 +315,21 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         for grp_name, grp_sets in GROUPS.items()
     ]
     groups_with_data = [(g, b) for g, b in groups_with_data if b]
-    mid = (len(groups_with_data) + 1) // 2
-    col1_html = "".join(
+    mid: int = (len(groups_with_data) + 1) // 2
+    col1_html: str = "".join(
         f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[:mid]
     )
-    col2_html = "".join(
+    col2_html: str = "".join(
         f'<div class="vt-group-hdr">{g}</div>{b}' for g, b in groups_with_data[mid:]
     )
-    set_grid = (
+    set_grid: str = (
         '<div class="vt-set-cols">'
         '<div class="vt-set-col">' + col1_html + "</div>"
         '<div class="vt-set-col">' + col2_html + "</div>"
         "</div>"
     )
 
-    sidebar = (
+    sidebar: str = (
         '<div id="vt-controls">'
         '<div class="vt-section">'
         '<div class="vt-label">Display</div>' + display_html + "</div>"
@@ -344,7 +343,7 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         "</div>"
     )
 
-    css = (
+    css: str = (
         "<style>"
         "#vt-controls{"
         "width:185px;flex-shrink:0;font-family:sans-serif;"
@@ -376,7 +375,7 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         "</style>"
     )
 
-    js = (
+    js: str = (
         "<script>"
         "function setupToggles(view){"
         "document.querySelectorAll('.vt-btn').forEach(function(btn){"
@@ -435,8 +434,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
 
 
 def save_chart(session: str) -> None:
-    from ..aggregate import load_points
-
     df: pl.DataFrame = load_points(session)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())

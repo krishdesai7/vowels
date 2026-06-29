@@ -51,7 +51,7 @@ item []:
         intervals [10]:
             xmin = 4.233922902494334 
             xmax = 4.6419229024943345 
-            text = "2HAPPY_coffee" 
+            text = "2haPPY_coffee" 
         intervals [11]:
             xmin = 4.6419229024943345 
             xmax = 5.137922902494335 
@@ -251,7 +251,7 @@ item []:
         intervals [60]:
             xmin = 30.881922902494335 
             xmax = 31.281922902494333 
-            text = "2LETTER_letter" 
+            text = "2leTTER_letter" 
         intervals [61]:
             xmin = 31.281922902494333 
             xmax = 32.28192290249434 
@@ -419,7 +419,7 @@ item []:
         intervals [102]:
             xmin = 56.633922902494334 
             xmax = 56.98592290249434 
-            text = "2LETTER_butter" 
+            text = "2leTTER_butter" 
         intervals [103]:
             xmin = 56.98592290249434 
             xmax = 57.85792290249434 
@@ -547,7 +547,7 @@ item []:
         intervals [134]:
             xmin = 76.76192290249433 
             xmax = 76.93792290249434 
-            text = "2LETTER_paper" 
+            text = "2leTTER_paper" 
         intervals [135]:
             xmin = 76.93792290249434 
             xmax = 77.69792290249434 
@@ -643,7 +643,7 @@ item []:
         intervals [158]:
             xmin = 91.71392290249433 
             xmax = 91.96192290249434 
-            text = "2HAPPY_city" 
+            text = "2haPPY_city" 
         intervals [159]:
             xmin = 91.96192290249434 
             xmax = 92.92992290249434 
@@ -699,7 +699,7 @@ item []:
         intervals [172]:
             xmin = 100.60192290249434 
             xmax = 100.98592290249434 
-            text = "2HAPPY_happy" 
+            text = "2haPPY_happy" 
         intervals [173]:
             xmin = 100.98592290249434 
             xmax = 101.85792290249434 

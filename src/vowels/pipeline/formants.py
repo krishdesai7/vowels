@@ -128,5 +128,11 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
         rows.extend(winner_to_rows(winner_df, f0, token_id, label, t1, t2))
         token_id += 1
 
+    if not rows:
+        print(
+            f"Warning: no qualifying vowel intervals found in {session}; "
+            "no parquet written"
+        )
+        return
     pl.DataFrame(rows).write_parquet(d / f"{session}_formants.parquet")
     print(f"Created {d / f'{session}_formants.parquet'} ({token_id} tokens)")

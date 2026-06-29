@@ -73,6 +73,8 @@ def collapse_token(token: pl.DataFrame, label: str) -> list[dict[str, float | st
     set_name = get_set_name(normalized)
     word = normalized.split("_", 1)[1] if "_" in normalized else ""
 
+    # Diphthong routing takes precedence over disyllabic: the corpus has no
+    # diphthong sets that are also 2-prefixed, so checking diphthong first is safe.
     if is_diphthong_set(set_name):
         return [
             _point(token, f"{label}:1", set_name, word, 0.1, 0.45),

@@ -66,19 +66,19 @@ def formants(
         ),
     ] = Gender.M,
 ) -> None:
-    """Extract F1/F2/F3 at nucleus points and write formants CSV."""
+    """Extract formant trajectories with fasttrackpy and write the trajectory parquet."""
     extract_formants(session, gender)
 
 
 @app.command()
 def plot(session: str) -> None:
-    """Generate interactive vowel space HTML from existing formants CSV."""
+    """Generate interactive vowel space HTML from the trajectory parquet."""
     save_chart(session)
 
 
 @app.command()
 def bark(session: str) -> None:
-    """Generate interactive Bark Z 3D vowel space HTML from existing formants CSV."""
+    """Generate interactive Bark Z 3D vowel space HTML from the trajectory parquet."""
     save_bark_chart(session)
 
 

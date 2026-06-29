@@ -1,11 +1,15 @@
+from pathlib import Path
+from types import SimpleNamespace
 from typing import Final
 
 import numpy as np
+import parselmouth
 import polars as pl
 import pytest
 
 from vowels import parse_labels
-from vowels.pipeline.formants import winner_to_rows
+from vowels.pipeline.formants import _gender_params, extract_formants, winner_to_rows
+from vowels.schema import Gender
 
 REQUIRED_COLUMNS: Final[set[str]] = {"time", "label", "F1", "F2", "F3", "set", "word"}
 
@@ -118,3 +122,109 @@ def test_winner_to_rows_zero_span_guard() -> None:
         winner, np.array([120.0]), token_id=0, label="TRAP_cat", t1=1.0, t2=1.0
     )
     assert rows[0]["rel_time"] == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# _gender_params helper
+# ---------------------------------------------------------------------------
+
+
+def test_gender_params_male() -> None:
+    assert _gender_params(Gender.M) == {
+        "min_max_formant": 4500,
+        "max_max_formant": 5500,
+        "window_length": 0.025,
+        "pitch_floor": 75,
+    }
+
+
+def test_gender_params_non_male() -> None:
+    expected = {
+        "min_max_formant": 5000,
+        "max_max_formant": 6500,
+        "window_length": 0.030,
+        "pitch_floor": 100,
+    }
+    assert _gender_params(Gender.F) == expected
+    assert _gender_params(Gender.C) == expected
+
+
+# ---------------------------------------------------------------------------
+# extract_formants orchestration
+# ---------------------------------------------------------------------------
+
+
+def test_extract_formants_orchestration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify extract_formants loops correctly: skips silent/empty intervals
+    and writes the expected trajectory parquet schema."""
+    import vowels.pipeline.formants as formants_mod
+
+    session = "s_test"
+    session_d = tmp_path / session
+    session_d.mkdir()
+
+    # Redirect all session path resolution into tmp_path
+    monkeypatch.setattr(formants_mod, "session_dir", lambda _: session_d)
+
+    # Placeholder WAV — contents irrelevant because process_audio_file is mocked
+    (session_d / f"{session}.wav").write_bytes(b"")
+
+    # Build a real TextGrid via parselmouth and write to file
+    # Intervals: [0.00, 0.05] "silent"  (skipped — label check)
+    #            [0.05, 0.50] "FLEECE_beat"  (processed, token_id 0)
+    #            [0.50, 1.00] "PRICE_buy"   (processed, token_id 1)
+    tg = parselmouth.praat.call("Create TextGrid", 0.0, 1.0, "silences", "")
+    parselmouth.praat.call(tg, "Insert boundary", 1, 0.05)
+    parselmouth.praat.call(tg, "Insert boundary", 1, 0.5)
+    parselmouth.praat.call(tg, "Set interval text", 1, 1, "silent")
+    parselmouth.praat.call(tg, "Set interval text", 1, 2, "FLEECE_beat")
+    parselmouth.praat.call(tg, "Set interval text", 1, 3, "PRICE_buy")
+    tg_path = session_d / f"{session}_labeled.TextGrid"
+    parselmouth.praat.call(tg, "Write to text file", str(tg_path))
+
+    # Stub: process_audio_file -> fake candidates with 3 frames each call
+    n_frames = 3
+    _winner_df = pl.DataFrame({
+        "time": [0.1, 0.2, 0.3],
+        "F1": [400.0] * n_frames,
+        "F2": [2000.0] * n_frames,
+        "F3": [2800.0] * n_frames,
+        "F1_s": [400.0] * n_frames,
+        "F2_s": [2000.0] * n_frames,
+        "F3_s": [2800.0] * n_frames,
+        "B1": [50.0] * n_frames,
+        "B2": [80.0] * n_frames,
+        "B3": [120.0] * n_frames,
+        "max_formant": [5000.0] * n_frames,
+        "error": [0.01] * n_frames,
+    })
+    _f0 = np.array([120.0, 121.0, 119.0])
+    _fake_winner = SimpleNamespace(to_df=lambda output: _winner_df)
+    _fake_candidates = SimpleNamespace(winner=_fake_winner, f0=_f0)
+    monkeypatch.setattr(
+        formants_mod, "process_audio_file", lambda *a, **kw: _fake_candidates
+    )
+
+    extract_formants(session, Gender.M)
+
+    out = pl.read_parquet(session_d / f"{session}_formants.parquet")
+
+    EXPECTED_COLS = {
+        "token_id", "label", "set", "word", "is_diphthong", "is_disyllabic",
+        "time", "rel_time", "F0", "F1", "F2", "F3",
+        "F1_s", "F2_s", "F3_s", "B1", "B2", "B3", "max_formant", "error",
+    }
+    assert EXPECTED_COLS.issubset(set(out.columns))
+
+    # Silent interval was skipped -> exactly 2 unique token_ids
+    assert out["token_id"].n_unique() == 2
+
+    fleece = out.filter(pl.col("set") == "FLEECE")
+    price = out.filter(pl.col("set") == "PRICE")
+    assert not fleece.is_empty()
+    assert not price.is_empty()
+    # FLEECE is a monophthong; PRICE is a diphthong
+    assert fleece["is_diphthong"][0] == False  # noqa: E712
+    assert price["is_diphthong"][0] == True  # noqa: E712

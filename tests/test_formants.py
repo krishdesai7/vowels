@@ -81,8 +81,12 @@ def test_time_and_formant_columns_preserved() -> None:
 
 
 def test_winner_to_rows_schema_and_rel_time() -> None:
+    # fasttrackpy's to_df() "time" is interval-relative (starts near 0), NOT
+    # the absolute file time. rel_time must therefore be time / span, so a
+    # token spanning t1=1.0..t2=1.2 with interval-relative times 0.0..0.2 maps
+    # onto [0, 1].
     winner = pl.DataFrame({
-        "time": [1.0, 1.1, 1.2],
+        "time": [0.0, 0.1, 0.2],
         "F1": [500.0, 510.0, 505.0], "F2": [1500.0, 1490.0, 1495.0],
         "F3": [2500.0, 2510.0, 2505.0],
         "F1_s": [502.0, 508.0, 506.0], "F2_s": [1498.0, 1492.0, 1496.0],
@@ -105,6 +109,7 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
     assert rows[0]["is_disyllabic"] is True
     assert rows[0]["is_diphthong"] is False
     assert rows[0]["rel_time"] == pytest.approx(0.0)
+    assert rows[1]["rel_time"] == pytest.approx(0.5)
     assert rows[2]["rel_time"] == pytest.approx(1.0)
     assert rows[0]["F0"] == pytest.approx(120.0)
     assert rows[1]["F0"] == pytest.approx(121.0)
@@ -113,7 +118,7 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
 
 def test_winner_to_rows_zero_span_guard() -> None:
     winner = pl.DataFrame({
-        "time": [1.0], "F1": [500.0], "F2": [1500.0], "F3": [2500.0],
+        "time": [0.0], "F1": [500.0], "F2": [1500.0], "F3": [2500.0],
         "F1_s": [500.0], "F2_s": [1500.0], "F3_s": [2500.0],
         "B1": [50.0], "B2": [80.0], "B3": [120.0],
         "max_formant": [5000.0], "error": [0.1],
@@ -122,6 +127,32 @@ def test_winner_to_rows_zero_span_guard() -> None:
         winner, np.array([120.0]), token_id=0, label="TRAP_cat", t1=1.0, t2=1.0
     )
     assert rows[0]["rel_time"] == pytest.approx(0.0)
+
+
+def test_winner_to_rows_rel_time_in_unit_range_for_late_interval() -> None:
+    # Regression: a token late in the file (large absolute t1) whose
+    # fasttrackpy interval-relative times start near 0 and are edge-trimmed.
+    # rel_time must stay within [0, 1] regardless of the absolute offset --
+    # the earlier bug subtracted t1 from an already-relative time, producing
+    # rel_time near -100 and disabling the steady-state window entirely.
+    t1, t2 = 47.36, 47.80  # span 0.44, like NORTH_born in session4
+    times = [0.026, 0.20, 0.414]  # interval-relative, edge-trimmed
+    winner = pl.DataFrame({
+        "time": times,
+        "F1": [500.0, 510.0, 505.0], "F2": [1500.0, 1490.0, 1495.0],
+        "F3": [2500.0, 2510.0, 2505.0],
+        "F1_s": [502.0, 508.0, 506.0], "F2_s": [1498.0, 1492.0, 1496.0],
+        "F3_s": [2502.0, 2508.0, 2506.0],
+        "B1": [50.0, 51.0, 52.0], "B2": [80.0, 81.0, 82.0], "B3": [120.0, 121.0, 122.0],
+        "max_formant": [5000.0] * 3, "error": [0.1] * 3,
+    })
+    rows = winner_to_rows(
+        winner, np.array([120.0, 121.0, 119.0]),
+        token_id=0, label="NORTH_born", t1=t1, t2=t2,
+    )
+    rels = [r["rel_time"] for r in rows]
+    assert all(0.0 <= r <= 1.0 for r in rels), rels
+    assert rels[0] == pytest.approx(0.026 / 0.44)
 
 
 # ---------------------------------------------------------------------------

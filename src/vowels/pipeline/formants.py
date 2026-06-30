@@ -50,6 +50,10 @@ def winner_to_rows(
     set_name: str = get_set_name(normalized)
     word: str = normalized.split("_", 1)[1] if "_" in normalized else ""
     diph: bool = is_diphthong_set(set_name)
+    # fasttrackpy's to_df() "time" is interval-relative (starts near 0 within
+    # the extracted interval), so rel_time is time / span -- NOT (time - t1),
+    # which would subtract the absolute interval offset and blow rel_time far
+    # outside [0, 1], disabling the steady-state window in aggregation.
     span: float = (t2 - t1) or 1.0
     rows: list[dict] = []
     for i, frame in enumerate(winner_df.iter_rows(named=True)):
@@ -62,7 +66,7 @@ def winner_to_rows(
                 "is_diphthong": diph,
                 "is_disyllabic": disyll,
                 "time": frame["time"],
-                "rel_time": (frame["time"] - t1) / span,
+                "rel_time": frame["time"] / span,
                 "F0": float(f0[i]),
                 "F1": frame["F1"],
                 "F2": frame["F2"],

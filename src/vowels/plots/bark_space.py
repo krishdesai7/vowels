@@ -5,6 +5,7 @@ import altair as alt
 import plotly.graph_objects as go
 import polars as pl
 
+from ..bark import add_bark_dims
 from ..paths import data_dir, session_dir
 from ..schema import GROUPS, Wells
 from .ellipse import precompute_ellipse
@@ -13,23 +14,10 @@ from .vowel_space import _inject_controls, _text_color
 DIV_ID: Final[str] = "bark-plot"
 
 
-def _bark(i: int) -> pl.Expr:
-    col: pl.Expr = pl.col(f"F{i}")
-    return ((26.81 * col) / (1960 + col) - 0.53).alias(f"Z{i}")
-
-
-def _add_bark_dims(df: pl.DataFrame) -> pl.DataFrame:
-    return df.with_columns(_bark(i) for i in range(0, 4)).with_columns(
-        (pl.col("Z1") - pl.col("Z0")).alias("Openness"),
-        (pl.col("Z2") - pl.col("Z1")).alias("Frontness"),
-        (pl.col("Z3") - pl.col("Z2")).alias("Roundness"),
-    )
-
-
 def _load_formants(session: str) -> pl.DataFrame:
     from ..aggregate import load_points
 
-    return load_points(session).pipe(_add_bark_dims).filter(pl.col("F0").is_not_nan())
+    return load_points(session).pipe(add_bark_dims).filter(pl.col("F0").is_not_nan())
 
 
 def _proj_angle_expr(

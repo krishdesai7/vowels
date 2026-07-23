@@ -5,7 +5,12 @@ import numpy as np
 import polars as pl
 import pytest
 
-from vowels.aggregate import collapse_token, points_from_trajectory, steady_state_index
+from vowels.aggregate import (
+    collapse_token,
+    points_from_trajectory,
+    steady_state_index,
+    token_displacement,
+)
 
 
 def test_picks_flat_region_in_center() -> None:
@@ -138,3 +143,24 @@ def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
     assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
     labels = sorted(points["label"].to_list())
     assert labels == ["PRICE_buy:1", "PRICE_buy:2", "TRAP_cat"]
+
+
+def test_displacement_small_for_monophthong() -> None:
+    rel = np.linspace(0.0, 1.0, 11)
+    # Flat F1/F2/F3 -> onset and offset targets coincide -> ~0 displacement.
+    df = _frames(rel, [500.0] * 11, [1500.0] * 11)
+    assert token_displacement(df) < 0.2
+
+
+def test_displacement_large_for_diphthong() -> None:
+    rel = np.linspace(0.0, 1.0, 11)
+    # F2 sweeps 900 -> 2300 Hz across the token -> big Frontness change.
+    f2 = np.linspace(900.0, 2300.0, 11)
+    df = _frames(rel, [500.0] * 11, list(f2))
+    assert token_displacement(df) > 1.0
+
+
+def test_displacement_nan_without_f0() -> None:
+    rel = np.linspace(0.0, 1.0, 11)
+    df = _frames(rel, [500.0] * 11, [1500.0] * 11, f0=[float("nan")] * 11)
+    assert math.isnan(token_displacement(df))

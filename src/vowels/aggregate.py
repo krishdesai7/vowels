@@ -78,6 +78,24 @@ def _zscore_velocity_index(
     return steady_state_index(dims, rel_time, lo, hi)
 
 
+def token_displacement(token: pl.DataFrame) -> float:
+    """Onset->offset spectral displacement in Bark for one token.
+
+    Returns NaN when the token has no finite F0 (cannot be Bark-normalized).
+    """
+    token = token.sort("rel_time")
+    barked: pl.DataFrame | None = _with_bark(token)
+    if barked is None:
+        return float("nan")
+    rel: NDArray[np.double] = token["rel_time"].to_numpy()
+    dims: NDArray[np.double] = np.column_stack(
+        [barked[d].to_numpy() for d in _BARK_DIMS]
+    )
+    onset: int = steady_state_index(dims, rel, *_ONSET_WINDOW)
+    offset: int = steady_state_index(dims, rel, *_OFFSET_WINDOW)
+    return float(np.linalg.norm(dims[offset] - dims[onset]))
+
+
 _DISYLLABIC_HALF_WINDOW = 0.15
 
 

@@ -25,8 +25,17 @@ def _zscore[T: np.number](x: NDArray[T]) -> NDArray[np.double]:
 
 
 _BARK_DIMS: tuple[str, str, str] = ("Openness", "Frontness", "Roundness")
-_ONSET_WINDOW: tuple[float, float] = (0.1, 0.45)
-_OFFSET_WINDOW: tuple[float, float] = (0.55, 0.9)
+
+# Measurement windows are confined to the middle 50% of the interval, because a
+# labeled interval spans the whole word rather than the vowel alone. Adjacent
+# voiced sonorants (nasals, /w/, /l/, /r/) are tracked as ordinary formant
+# frames, and -- being consonants with *steady* formants -- they masquerade as
+# vowel steady states, so the minimum-velocity criterion does not screen them
+# out. Keeping the search away from the interval edges is the defence. Voiceless
+# obstruents need no such handling: unvoiced frames are simply not tracked.
+_MONO_WINDOW: tuple[float, float] = (0.25, 0.75)
+_ONSET_WINDOW: tuple[float, float] = (0.25, 0.45)
+_OFFSET_WINDOW: tuple[float, float] = (0.55, 0.75)
 
 K_LOW: Final[float] = 2.0
 K_HIGH: Final[float] = 4.0
@@ -145,14 +154,14 @@ def collapse_token(token: pl.DataFrame, label: str) -> list[dict[str, np.double 
     # diphthong sets that are also 2-prefixed, so checking diphthong first is safe.
     if is_diphthong_set(set_name):
         return [
-            _point(token, f"{label}:1", set_name, word, 0.1, 0.45),
-            _point(token, f"{label}:2", set_name, word, 0.55, 0.9),
+            _point(token, f"{label}:1", set_name, word, *_ONSET_WINDOW),
+            _point(token, f"{label}:2", set_name, word, *_OFFSET_WINDOW),
         ]
     if is_disyllabic(label):
         lo: float = SECOND_VOWEL_CENTER_RATIO - _DISYLLABIC_HALF_WINDOW
         hi: float = SECOND_VOWEL_CENTER_RATIO + _DISYLLABIC_HALF_WINDOW
         return [_point(token, label, set_name, word, lo, hi)]
-    return [_point(token, label, set_name, word, 0.2, 0.8)]
+    return [_point(token, label, set_name, word, *_MONO_WINDOW)]
 
 
 _POINT_COLUMNS = ["label", "set", "word", "F0", "F1", "F2", "F3"]

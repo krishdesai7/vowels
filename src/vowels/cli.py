@@ -19,6 +19,13 @@ from . import (
 
 app = typer.Typer(no_args_is_help=True, help="Vowel formant analysis toolkit.")
 
+DialectOption = Annotated[
+    Dialect,
+    typer.Option(
+        "--dialect", "-d", help="Speaker dialect (GA/RP)", case_sensitive=False
+    ),
+]
+
 
 @app.command()
 def silences(
@@ -76,32 +83,27 @@ def formants(
 
 
 @app.command()
-def plot(session: str) -> None:
+def plot(session: str, dialect: DialectOption = DEFAULT_DIALECT) -> None:
     """Generate interactive vowel space HTML from the trajectory parquet."""
-    save_chart(session)
+    save_chart(session, dialect)
 
 
 @app.command()
-def bark(session: str) -> None:
+def bark(session: str, dialect: DialectOption = DEFAULT_DIALECT) -> None:
     """Generate interactive Bark Z 3D vowel space HTML from the trajectory parquet."""
-    save_bark_chart(session)
+    save_bark_chart(session, dialect)
 
 
 @app.command()
-def projections(session: str) -> None:
+def projections(session: str, dialect: DialectOption = DEFAULT_DIALECT) -> None:
     """Generate three 2D Bark Z projection plots (Frontness×Openness, ×Roundness, Openness×Roundness)."""
-    save_bark_projections(session)
+    save_bark_projections(session, dialect)
 
 
 @app.command()
 def diphthongs(
     session: str,
-    dialect: Annotated[
-        Dialect,
-        typer.Option(
-            "--dialect", "-d", help="Speaker dialect (GA/RP)", case_sensitive=False
-        ),
-    ] = DEFAULT_DIALECT,
+    dialect: DialectOption = DEFAULT_DIALECT,
 ) -> None:
     """Report per-set mono/diphthong classification and the flips from canonical."""
     report = diphthong_report(session, dialect)
@@ -132,11 +134,12 @@ def run(
             "--min-sounding-interval", "-s", help="Minimum sounding interval (s)"
         ),
     ] = 0.08,
+    dialect: DialectOption = DEFAULT_DIALECT,
 ) -> None:
     """Run the full pipeline: silences → label → formants → plots."""
     detect_silences(session, min_sounding_interval=min_sounding_interval)
     label_textgrid(session)
     extract_formants(session, gender)
-    save_chart(session)
-    save_bark_chart(session)
-    save_bark_projections(session)
+    save_chart(session, dialect)
+    save_bark_chart(session, dialect)
+    save_bark_projections(session, dialect)

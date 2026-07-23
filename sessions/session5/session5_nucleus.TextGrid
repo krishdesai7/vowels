@@ -51,7 +51,7 @@ item []:
         intervals [10]:
             xmin = 5.137623582766441 
             xmax = 5.6176235827664405 
-            text = "2HAPPY_coffee" 
+            text = "2haPPY_coffee" 
         intervals [11]:
             xmin = 5.6176235827664405 
             xmax = 6.24162358276644 
@@ -251,7 +251,7 @@ item []:
         intervals [60]:
             xmin = 31.65762358276644 
             xmax = 31.93762358276644 
-            text = "2LETTER_letter" 
+            text = "2leTTER_letter" 
         intervals [61]:
             xmin = 31.93762358276644 
             xmax = 34.57762358276644 
@@ -419,7 +419,7 @@ item []:
         intervals [102]:
             xmin = 54.00162358276644 
             xmax = 54.38562358276644 
-            text = "2LETTER_butter" 
+            text = "2leTTER_butter" 
         intervals [103]:
             xmin = 54.38562358276644 
             xmax = 55.03362358276644 
@@ -547,7 +547,7 @@ item []:
         intervals [134]:
             xmin = 73.15362358276644 
             xmax = 73.57762358276644 
-            text = "2LETTER_paper" 
+            text = "2leTTER_paper" 
         intervals [135]:
             xmin = 73.57762358276644 
             xmax = 74.15362358276644 
@@ -643,7 +643,7 @@ item []:
         intervals [158]:
             xmin = 85.41762358276644 
             xmax = 85.73762358276645 
-            text = "2HAPPY_city" 
+            text = "2haPPY_city" 
         intervals [159]:
             xmin = 85.73762358276645 
             xmax = 86.28162358276644 
@@ -699,7 +699,7 @@ item []:
         intervals [172]:
             xmin = 92.54562358276644 
             xmax = 92.97762358276644 
-            text = "2HAPPY_happy" 
+            text = "2haPPY_happy" 
         intervals [173]:
             xmin = 92.97762358276644 
             xmax = 93.53762358276644 
@@ -834,7 +834,7 @@ item []:
             mark = "2coMMA_comma" 
         points [7]:
             number = 5.53762358276644 
-            mark = "2HAPPY_coffee" 
+            mark = "2haPPY_coffee" 
         points [8]:
             number = 6.34762358276644 
             mark = "PRICE_try:1" 
@@ -939,7 +939,7 @@ item []:
             mark = "TRAP_cat" 
         points [42]:
             number = 31.890956916099775 
-            mark = "2LETTER_letter" 
+            mark = "2leTTER_letter" 
         points [43]:
             number = 34.73362358276644 
             mark = "FOOT_put" 
@@ -1020,7 +1020,7 @@ item []:
             mark = "STRUT_strut" 
         points [69]:
             number = 54.32162358276644 
-            mark = "2LETTER_butter" 
+            mark = "2leTTER_butter" 
         points [70]:
             number = 55.14962358276644 
             mark = "FLEECE_beat" 
@@ -1080,7 +1080,7 @@ item []:
             mark = "PALM_psalm" 
         points [89]:
             number = 73.50695691609977 
-            mark = "2LETTER_paper" 
+            mark = "2leTTER_paper" 
         points [90]:
             number = 74.27762358276644 
             mark = "KIT_sit" 
@@ -1125,7 +1125,7 @@ item []:
             mark = "GOAT_know:2" 
         points [104]:
             number = 85.6842902494331 
-            mark = "2HAPPY_city" 
+            mark = "2haPPY_city" 
         points [105]:
             number = 86.42562358276643 
             mark = "NEAR_beer:1" 
@@ -1152,7 +1152,7 @@ item []:
             mark = "CLOTH_cross" 
         points [113]:
             number = 92.90562358276644 
-            mark = "2HAPPY_happy" 
+            mark = "2haPPY_happy" 
         points [114]:
             number = 93.70162358276644 
             mark = "GOOSE_food" 

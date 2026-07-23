@@ -4,9 +4,9 @@ from pathlib import Path
 import altair as alt
 import polars as pl
 
-from ..aggregate import load_points
+from ..aggregate import DEFAULT_DIALECT, load_points
 from ..paths import data_dir, session_dir
-from ..schema import GROUPS, Wells
+from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
 
 _DIPH_NAMES: frozenset[str] = frozenset(s for s in GROUPS.get("Diphthongs", []))
@@ -433,8 +433,8 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
     return html
 
 
-def save_chart(session: str) -> None:
-    df: pl.DataFrame = load_points(session)
+def save_chart(session: str, dialect: Dialect = DEFAULT_DIALECT) -> None:
+    df: pl.DataFrame = load_points(session, dialect)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}

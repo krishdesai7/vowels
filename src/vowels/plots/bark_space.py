@@ -5,18 +5,24 @@ import altair as alt
 import plotly.graph_objects as go
 import polars as pl
 
-from ..aggregate import load_points
+from ..aggregate import DEFAULT_DIALECT, load_points
 from ..bark import add_bark_dims
 from ..paths import data_dir, session_dir
-from ..schema import GROUPS, Wells
+from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
 from .vowel_space import _inject_controls, _text_color
 
 DIV_ID: Final[str] = "bark-plot"
 
 
-def _load_formants(session: str) -> pl.DataFrame:
-    return load_points(session).pipe(add_bark_dims).filter(pl.col("F0").is_not_nan())
+def _load_formants(
+    session: str, dialect: Dialect = DEFAULT_DIALECT
+) -> pl.DataFrame:
+    return (
+        load_points(session, dialect)
+        .pipe(add_bark_dims)
+        .filter(pl.col("F0").is_not_nan())
+    )
 
 
 def _proj_angle_expr(
@@ -402,8 +408,8 @@ def _inject_bark_controls(
     return html
 
 
-def save_bark_chart(session: str) -> None:
-    df: pl.DataFrame = _load_formants(session)
+def save_bark_chart(session: str, dialect: Dialect = DEFAULT_DIALECT) -> None:
+    df: pl.DataFrame = _load_formants(session, dialect)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
@@ -755,8 +761,8 @@ def build_bark_projections(df: pl.DataFrame, session: str) -> alt.HConcatChart:
     )
 
 
-def save_bark_projections(session: str) -> None:
-    df: pl.DataFrame = _load_formants(session)
+def save_bark_projections(session: str, dialect: Dialect = DEFAULT_DIALECT) -> None:
+    df: pl.DataFrame = _load_formants(session, dialect)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}

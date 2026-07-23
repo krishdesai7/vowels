@@ -1,5 +1,5 @@
 import math
-from typing import cast
+from typing import Final, cast
 
 import numpy as np
 import polars as pl
@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from .bark import add_bark_dims
 from .labels import (
+    DIPHTHONG_NAMES,
     SECOND_VOWEL_CENTER_RATIO,
     get_set_name,
     is_diphthong_set,
@@ -26,6 +27,10 @@ def _zscore[T: np.number](x: NDArray[T]) -> NDArray[np.double]:
 _BARK_DIMS: tuple[str, str, str] = ("Openness", "Frontness", "Roundness")
 _ONSET_WINDOW: tuple[float, float] = (0.1, 0.45)
 _OFFSET_WINDOW: tuple[float, float] = (0.55, 0.9)
+
+K_LOW: Final[float] = 2.0
+K_HIGH: Final[float] = 4.0
+MIN_SPREAD: Final[float] = 0.1  # Bark; guards a degenerate (zero-MAD) baseline
 
 
 def steady_state_index(
@@ -172,3 +177,58 @@ def load_points(session: str) -> pl.DataFrame:
         session_dir(session) / f"{session}_formants.parquet"
     )
     return points_from_trajectory(traj)
+
+
+def _score_sets(
+    traj: pl.DataFrame,
+) -> tuple[dict[str, float], dict[str, int], dict[str, bool]]:
+    scores: dict[str, list[float]] = {}
+    counts: dict[str, int] = {}
+    disyll: dict[str, bool] = {}
+    for (_token_id,), token in traj.group_by("token_id", maintain_order=True):
+        label: str = token["label"][0]
+        normalized, is_dis = normalize_label(label)
+        set_name: str = get_set_name(normalized)
+        counts[set_name] = counts.get(set_name, 0) + 1
+        disyll[set_name] = disyll.get(set_name, False) or is_dis
+        disp: float = token_displacement(token)
+        if not math.isnan(disp):
+            scores.setdefault(set_name, []).append(disp)
+    set_score: dict[str, float] = {
+        s: float(np.median(v)) for s, v in scores.items() if v
+    }
+    return set_score, counts, disyll
+
+
+def _baseline(
+    set_score: dict[str, float], disyll: dict[str, bool]
+) -> tuple[float, float]:
+    mono: list[float] = [
+        sc
+        for s, sc in set_score.items()
+        if s not in DIPHTHONG_NAMES and not disyll.get(s, False)
+    ]
+    if not mono:
+        return 0.0, MIN_SPREAD
+    arr: NDArray[np.double] = np.array(mono)
+    center: float = float(np.median(arr))
+    spread: float = max(float(np.median(np.abs(arr - center))), MIN_SPREAD)
+    return center, spread
+
+
+def _decide(
+    set_name: str, score: float, center: float, spread: float, disyll: dict[str, bool]
+) -> bool:
+    if disyll.get(set_name, False):
+        return False
+    if score > center + K_HIGH * spread:
+        return True
+    if score < center + K_LOW * spread:
+        return False
+    return set_name in DIPHTHONG_NAMES
+
+
+def classify_sets(traj: pl.DataFrame) -> dict[str, bool]:
+    set_score, _counts, disyll = _score_sets(traj)
+    center, spread = _baseline(set_score, disyll)
+    return {s: _decide(s, sc, center, spread, disyll) for s, sc in set_score.items()}

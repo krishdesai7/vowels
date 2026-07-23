@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 from vowels.aggregate import (
+    classify_sets,
     collapse_token,
     points_from_trajectory,
     steady_state_index,
@@ -164,3 +165,78 @@ def test_displacement_nan_without_f0() -> None:
     rel = np.linspace(0.0, 1.0, 11)
     df = _frames(rel, [500.0] * 11, [1500.0] * 11, f0=[float("nan")] * 11)
     assert math.isnan(token_displacement(df))
+
+
+def _token(token_id, label, f1, f2, n=11):
+    rel = list(np.linspace(0.0, 1.0, n))
+    return pl.DataFrame(
+        {
+            "token_id": [token_id] * n,
+            "label": [label] * n,
+            "rel_time": rel,
+            "F0": [120.0] * n,
+            "F1_s": [float(x) for x in f1]
+            if hasattr(f1, "__len__")
+            else [float(f1)] * n,
+            "F2_s": [float(x) for x in f2]
+            if hasattr(f2, "__len__")
+            else [float(f2)] * n,
+            "F3_s": [2500.0] * n,
+        }
+    )
+
+
+def _sweep(a, b, n=11):
+    return list(np.linspace(a, b, n))
+
+
+def test_classify_flips_flat_canonical_diphthong_to_mono() -> None:
+    # Baseline: several flat canonical-monophthong sets. A canonical diphthong
+    # (GOAT) that is also flat must flip to monophthong; a canonical diphthong
+    # that sweeps (PRICE) must stay a diphthong.
+    traj = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "GOAT_goat", 500, 1200),  # flat -> mono
+            _token(5, "PRICE_buy", 700, _sweep(1000, 2400)),  # sweep -> diph
+        ]
+    )
+    result = classify_sets(traj)
+    assert result["GOAT"] is False
+    assert result["PRICE"] is True
+    assert result["KIT"] is False
+
+
+def test_classify_keeps_borderline_at_prior() -> None:
+    # A canonical diphthong whose movement sits inside the hysteresis band
+    # keeps its canonical (diphthong) label.
+    traj = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(
+                4, "MOUTH_out", 600, _sweep(1500, 1750)
+            ),  # mild move -> stays diph by prior
+        ]
+    )
+    result = classify_sets(traj)
+    assert result["MOUTH"] is True
+
+
+def test_classify_flips_moving_canonical_mono_to_diph() -> None:
+    traj = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "FLEECE_bead", 350, _sweep(900, 2600)),  # strong sweep -> diph
+        ]
+    )
+    result = classify_sets(traj)
+    assert result["FLEECE"] is True

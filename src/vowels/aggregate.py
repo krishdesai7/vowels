@@ -48,15 +48,22 @@ def steady_state_index(
 def _with_bark(token: pl.DataFrame) -> pl.DataFrame | None:
     """Bark dims on the smoothed formant track; None if the token has no F0.
 
-    NaN-F0 frames are filled with the token's mean finite F0 so Bark's F0
-    reference (Z0) is defined per frame.
+    Z0 is held at the token's mean finite F0 across every frame rather than
+    tracking F0 frame by frame. In Syrdal & Gopal's Bark-difference metric F0
+    is a speaker-size normalizer, not a per-frame signal: since
+    ``Openness = Z1 - Z0``, a per-frame Z0 lets intonation and declination
+    masquerade as articulatory movement -- and frame-to-frame movement is
+    exactly what steady-state selection minimizes. Anchoring also subsumes the
+    NaN-F0 fill, since unvoiced frames inherit the same reference.
     """
     f0: NDArray[np.double] = token["F0"].to_numpy()
     finite: NDArray[np.double] = f0[~np.isnan(f0)]
     if finite.size == 0:
         return None
-    filled: pl.DataFrame = token.with_columns(pl.col("F0").fill_nan(float(finite.mean())))
-    return add_bark_dims(filled, formant_cols=("F1_s", "F2_s", "F3_s"))
+    anchored: pl.DataFrame = token.with_columns(
+        pl.lit(float(finite.mean())).alias("F0")
+    )
+    return add_bark_dims(anchored, formant_cols=("F1_s", "F2_s", "F3_s"))
 
 
 def _zscore_velocity_index(

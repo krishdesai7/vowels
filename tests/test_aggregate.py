@@ -1,3 +1,6 @@
+import math
+from typing import cast
+
 import numpy as np
 import polars as pl
 import pytest
@@ -21,13 +24,15 @@ def test_window_restricts_search() -> None:
 
 
 def test_velocity_uses_all_bark_axes() -> None:
-    # Movement only on the second axis (e.g. Frontness) must still register.
+    # Axis 0 alone is slowest at frame 4, so ignoring axis 1 would select it.
+    # Axis 1 jumps there, making frame 4 the fastest overall. Selecting frame 1
+    # therefore proves both axes contribute to the velocity norm.
     rel = np.linspace(0.0, 1.0, 5)
-    axis0 = np.zeros(5)
+    axis0 = np.array([0.0, 1.0, 3.0, 6.0, 6.0])  # per-frame steps 1, 2, 3, 0
     axis1 = np.array([0.0, 0.0, 0.0, 0.0, 5.0])  # jump on the last frame
     dims = np.column_stack([axis0, axis1])
-    idx = steady_state_index(dims, rel, 0.0, 1.0)
-    assert idx != 4  # the moving frame is not the steady state
+    assert steady_state_index(axis0.reshape(-1, 1), rel, 0.0, 1.0) == 4
+    assert steady_state_index(dims, rel, 0.0, 1.0) == 1
 
 
 def test_empty_window_falls_back_to_all_frames() -> None:
@@ -52,8 +57,9 @@ def _frames(rel, f1, f2, f3=None, f0=None) -> pl.DataFrame:
 
 def test_monophthong_yields_one_point() -> None:
     rel = np.linspace(0.0, 1.0, 11)
-    df = _frames(rel, [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800],
-                 [2000] * 11)
+    df = _frames(
+        rel, [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800], [2000] * 11
+    )
     rows = collapse_token(df, "TRAP_cat")
     assert len(rows) == 1
     assert rows[0]["label"] == "TRAP_cat"
@@ -83,33 +89,51 @@ def test_disyllabic_targets_second_syllable_window() -> None:
 
 
 def test_nan_f0_falls_back_to_token_mean() -> None:
-    # Openness is Z1 - Z0, so with flat formants the Bark velocity is driven
-    # entirely by F0. The NaN frame is filled with the token's mean finite F0
-    # (120.0) for the Bark transform, so flanking it with 120.0 makes it the
-    # min-velocity frame and forces the point's F0 through the NaN fallback.
-    rel = np.linspace(0.0, 1.0, 7)
-    f0 = [110.0, 130.0, 120.0, float("nan"), 120.0, 130.0, 110.0]
-    df = _frames(rel, [500] * 7, [1500] * 7, f0=f0)
+    rel = np.linspace(0.0, 1.0, 5)
+    f0 = [110.0, float("nan"), 130.0, 130.0, 110.0]
+    df = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
     rows = collapse_token(df, "KIT_bit")
+    # Formants are flat and Z0 is anchored per token, so every frame has zero
+    # Bark velocity and the first candidate (index 1) wins. Its F0 is NaN, so
+    # the point must fall back to the token mean of 110, 130, 130, 110.
     assert rows[0]["F0"] == pytest.approx(120.0)
+
+
+def test_all_nan_f0_still_yields_a_point() -> None:
+    # A wholly unvoiced token (seen in real data) has no F0 to anchor Bark to,
+    # so _with_bark returns None and selection falls back to z-scored Hz. The
+    # token must still produce a usable point rather than blowing up.
+    rel = np.linspace(0.0, 1.0, 5)
+    f1 = [500.0, 500.0, 700.0, 500.0, 500.0]
+    df = _frames(rel, f1, [1500] * 5, f0=[float("nan")] * 5)
+    rows = collapse_token(df, "KIT_bit")
+    assert len(rows) == 1
+    assert math.isnan(cast(float, rows[0]["F0"]))
+    assert rows[0]["F1"] in (500.0, 700.0)
 
 
 def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
     rel = list(np.linspace(0.0, 1.0, 11))
+
     def block(token_id, label, f1, f2):
-        return pl.DataFrame({
-            "token_id": [token_id] * 11,
-            "label": [label] * 11,
-            "rel_time": rel,
-            "F0": [120.0] * 11,
-            "F1_s": [float(f1)] * 11,
-            "F2_s": [float(f2)] * 11,
-            "F3_s": [2500.0] * 11,
-        })
-    traj = pl.concat([
-        block(0, "TRAP_cat", 700, 1600),
-        block(1, "PRICE_buy", 400, 2200),
-    ])
+        return pl.DataFrame(
+            {
+                "token_id": [token_id] * 11,
+                "label": [label] * 11,
+                "rel_time": rel,
+                "F0": [120.0] * 11,
+                "F1_s": [float(f1)] * 11,
+                "F2_s": [float(f2)] * 11,
+                "F3_s": [2500.0] * 11,
+            }
+        )
+
+    traj = pl.concat(
+        [
+            block(0, "TRAP_cat", 700, 1600),
+            block(1, "PRICE_buy", 400, 2200),
+        ]
+    )
     points = points_from_trajectory(traj)
     assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
     labels = sorted(points["label"].to_list())

@@ -39,6 +39,8 @@ site-package-path = ["typings"]
 extra-paths = ["typings"]
 
 [tool.pyright]
+venvPath = "."
+venv = ".venv"
 stubPath = "typings"
 extraPaths = ["typings"]
 

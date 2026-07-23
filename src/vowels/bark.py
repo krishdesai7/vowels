@@ -13,9 +13,7 @@ def add_bark_dims(
     formant_cols: tuple[str, str, str] = ("F1", "F2", "F3"),
 ) -> pl.DataFrame:
     cols: tuple[str, ...] = (f0_col, *formant_cols)
-    return df.with_columns(
-        _z_expr(c, i) for i, c in enumerate(cols)
-    ).with_columns(
+    return df.with_columns(_z_expr(c, i) for i, c in enumerate(cols)).with_columns(
         (pl.col("Z1") - pl.col("Z0")).alias("Openness"),
         (pl.col("Z2") - pl.col("Z1")).alias("Frontness"),
         (pl.col("Z3") - pl.col("Z2")).alias("Roundness"),

@@ -85,22 +85,46 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
     # the absolute file time. rel_time must therefore be time / span, so a
     # token spanning t1=1.0..t2=1.2 with interval-relative times 0.0..0.2 maps
     # onto [0, 1].
-    winner = pl.DataFrame({
-        "time": [0.0, 0.1, 0.2],
-        "F1": [500.0, 510.0, 505.0], "F2": [1500.0, 1490.0, 1495.0],
-        "F3": [2500.0, 2510.0, 2505.0],
-        "F1_s": [502.0, 508.0, 506.0], "F2_s": [1498.0, 1492.0, 1496.0],
-        "F3_s": [2502.0, 2508.0, 2506.0],
-        "B1": [50.0, 51.0, 52.0], "B2": [80.0, 81.0, 82.0], "B3": [120.0, 121.0, 122.0],
-        "max_formant": [5000.0] * 3, "error": [0.1] * 3,
-    })
+    winner = pl.DataFrame(
+        {
+            "time": [0.0, 0.1, 0.2],
+            "F1": [500.0, 510.0, 505.0],
+            "F2": [1500.0, 1490.0, 1495.0],
+            "F3": [2500.0, 2510.0, 2505.0],
+            "F1_s": [502.0, 508.0, 506.0],
+            "F2_s": [1498.0, 1492.0, 1496.0],
+            "F3_s": [2502.0, 2508.0, 2506.0],
+            "B1": [50.0, 51.0, 52.0],
+            "B2": [80.0, 81.0, 82.0],
+            "B3": [120.0, 121.0, 122.0],
+            "max_formant": [5000.0] * 3,
+            "error": [0.1] * 3,
+        }
+    )
     f0 = np.array([120.0, 121.0, 119.0])
     rows = winner_to_rows(winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2)
     assert len(rows) == 3
     EXPECTED_KEYS = {
-        "token_id", "label", "set", "word", "is_diphthong", "is_disyllabic",
-        "time", "rel_time", "F0", "F1", "F2", "F3", "F1_s", "F2_s", "F3_s",
-        "B1", "B2", "B3", "max_formant", "error",
+        "token_id",
+        "label",
+        "set",
+        "word",
+        "is_diphthong",
+        "is_disyllabic",
+        "time",
+        "rel_time",
+        "F0",
+        "F1",
+        "F2",
+        "F3",
+        "F1_s",
+        "F2_s",
+        "F3_s",
+        "B1",
+        "B2",
+        "B3",
+        "max_formant",
+        "error",
     }
     assert set(rows[0].keys()) == EXPECTED_KEYS
     assert rows[0]["token_id"] == 7
@@ -117,12 +141,22 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
 
 
 def test_winner_to_rows_zero_span_guard() -> None:
-    winner = pl.DataFrame({
-        "time": [0.0], "F1": [500.0], "F2": [1500.0], "F3": [2500.0],
-        "F1_s": [500.0], "F2_s": [1500.0], "F3_s": [2500.0],
-        "B1": [50.0], "B2": [80.0], "B3": [120.0],
-        "max_formant": [5000.0], "error": [0.1],
-    })
+    winner = pl.DataFrame(
+        {
+            "time": [0.0],
+            "F1": [500.0],
+            "F2": [1500.0],
+            "F3": [2500.0],
+            "F1_s": [500.0],
+            "F2_s": [1500.0],
+            "F3_s": [2500.0],
+            "B1": [50.0],
+            "B2": [80.0],
+            "B3": [120.0],
+            "max_formant": [5000.0],
+            "error": [0.1],
+        }
+    )
     rows = winner_to_rows(
         winner, np.array([120.0]), token_id=0, label="TRAP_cat", t1=1.0, t2=1.0
     )
@@ -137,18 +171,29 @@ def test_winner_to_rows_rel_time_in_unit_range_for_late_interval() -> None:
     # rel_time near -100 and disabling the steady-state window entirely.
     t1, t2 = 47.36, 47.80  # span 0.44, like NORTH_born in session4
     times = [0.026, 0.20, 0.414]  # interval-relative, edge-trimmed
-    winner = pl.DataFrame({
-        "time": times,
-        "F1": [500.0, 510.0, 505.0], "F2": [1500.0, 1490.0, 1495.0],
-        "F3": [2500.0, 2510.0, 2505.0],
-        "F1_s": [502.0, 508.0, 506.0], "F2_s": [1498.0, 1492.0, 1496.0],
-        "F3_s": [2502.0, 2508.0, 2506.0],
-        "B1": [50.0, 51.0, 52.0], "B2": [80.0, 81.0, 82.0], "B3": [120.0, 121.0, 122.0],
-        "max_formant": [5000.0] * 3, "error": [0.1] * 3,
-    })
+    winner = pl.DataFrame(
+        {
+            "time": times,
+            "F1": [500.0, 510.0, 505.0],
+            "F2": [1500.0, 1490.0, 1495.0],
+            "F3": [2500.0, 2510.0, 2505.0],
+            "F1_s": [502.0, 508.0, 506.0],
+            "F2_s": [1498.0, 1492.0, 1496.0],
+            "F3_s": [2502.0, 2508.0, 2506.0],
+            "B1": [50.0, 51.0, 52.0],
+            "B2": [80.0, 81.0, 82.0],
+            "B3": [120.0, 121.0, 122.0],
+            "max_formant": [5000.0] * 3,
+            "error": [0.1] * 3,
+        }
+    )
     rows = winner_to_rows(
-        winner, np.array([120.0, 121.0, 119.0]),
-        token_id=0, label="NORTH_born", t1=t1, t2=t2,
+        winner,
+        np.array([120.0, 121.0, 119.0]),
+        token_id=0,
+        label="NORTH_born",
+        t1=t1,
+        t2=t2,
     )
     rels = [r["rel_time"] for r in rows]
     assert all(0.0 <= r <= 1.0 for r in rels), rels
@@ -217,20 +262,22 @@ def test_extract_formants_orchestration(
 
     # Stub: process_audio_file -> fake candidates with 3 frames each call
     n_frames = 3
-    _winner_df = pl.DataFrame({
-        "time": [0.1, 0.2, 0.3],
-        "F1": [400.0] * n_frames,
-        "F2": [2000.0] * n_frames,
-        "F3": [2800.0] * n_frames,
-        "F1_s": [400.0] * n_frames,
-        "F2_s": [2000.0] * n_frames,
-        "F3_s": [2800.0] * n_frames,
-        "B1": [50.0] * n_frames,
-        "B2": [80.0] * n_frames,
-        "B3": [120.0] * n_frames,
-        "max_formant": [5000.0] * n_frames,
-        "error": [0.01] * n_frames,
-    })
+    _winner_df = pl.DataFrame(
+        {
+            "time": [0.1, 0.2, 0.3],
+            "F1": [400.0] * n_frames,
+            "F2": [2000.0] * n_frames,
+            "F3": [2800.0] * n_frames,
+            "F1_s": [400.0] * n_frames,
+            "F2_s": [2000.0] * n_frames,
+            "F3_s": [2800.0] * n_frames,
+            "B1": [50.0] * n_frames,
+            "B2": [80.0] * n_frames,
+            "B3": [120.0] * n_frames,
+            "max_formant": [5000.0] * n_frames,
+            "error": [0.01] * n_frames,
+        }
+    )
     _f0 = np.array([120.0, 121.0, 119.0])
     _fake_winner = SimpleNamespace(to_df=lambda output: _winner_df)
     _fake_candidates = SimpleNamespace(winner=_fake_winner, f0=_f0)
@@ -243,9 +290,26 @@ def test_extract_formants_orchestration(
     out = pl.read_parquet(session_d / f"{session}_formants.parquet")
 
     EXPECTED_COLS = {
-        "token_id", "label", "set", "word", "is_diphthong", "is_disyllabic",
-        "time", "rel_time", "F0", "F1", "F2", "F3",
-        "F1_s", "F2_s", "F3_s", "B1", "B2", "B3", "max_formant", "error",
+        "token_id",
+        "label",
+        "set",
+        "word",
+        "is_diphthong",
+        "is_disyllabic",
+        "time",
+        "rel_time",
+        "F0",
+        "F1",
+        "F2",
+        "F3",
+        "F1_s",
+        "F2_s",
+        "F3_s",
+        "B1",
+        "B2",
+        "B3",
+        "max_formant",
+        "error",
     }
     assert EXPECTED_COLS.issubset(set(out.columns))
 

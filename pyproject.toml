@@ -32,6 +32,9 @@ build-backend = "uv_build"
 [tool.pyrefly]
 site-package-path = ["typings"]
 
+[tool.ty.environment]
+extra-paths = ["typings"]
+
 [tool.pyright]
 stubPath = "typings"
 extraPaths = ["typings"]

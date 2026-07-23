@@ -83,12 +83,14 @@ def test_disyllabic_targets_second_syllable_window() -> None:
 
 
 def test_nan_f0_falls_back_to_token_mean() -> None:
-    rel = np.linspace(0.0, 1.0, 5)
-    f0 = [110.0, float("nan"), 130.0, 130.0, 110.0]
-    df = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
+    # Openness is Z1 - Z0, so with flat formants the Bark velocity is driven
+    # entirely by F0. The NaN frame is filled with the token's mean finite F0
+    # (120.0) for the Bark transform, so flanking it with 120.0 makes it the
+    # min-velocity frame and forces the point's F0 through the NaN fallback.
+    rel = np.linspace(0.0, 1.0, 7)
+    f0 = [110.0, 130.0, 120.0, float("nan"), 120.0, 130.0, 110.0]
+    df = _frames(rel, [500] * 7, [1500] * 7, f0=f0)
     rows = collapse_token(df, "KIT_bit")
-    # The chosen steady-state frame (index 1) has NaN F0, so the fallback to
-    # the token mean of finite F0 values (110, 130, 130, 110) must fire.
     assert rows[0]["F0"] == pytest.approx(120.0)
 
 

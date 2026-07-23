@@ -144,15 +144,15 @@ def _point(
     }
 
 
-def collapse_token(token: pl.DataFrame, label: str) -> list[dict[str, np.double | str]]:
+def collapse_token(
+    token: pl.DataFrame, label: str, is_diphthong: bool
+) -> list[dict[str, np.double | str]]:
     token = token.sort("rel_time")
     normalized, _ = normalize_label(label)
     set_name: str = get_set_name(normalized)
     word: str = normalized.split("_", 1)[1] if "_" in normalized else ""
 
-    # Diphthong routing takes precedence over disyllabic: the corpus has no
-    # diphthong sets that are also 2-prefixed, so checking diphthong first is safe.
-    if is_diphthong_set(set_name):
+    if is_diphthong:
         return [
             _point(token, f"{label}:1", set_name, word, *_ONSET_WINDOW),
             _point(token, f"{label}:2", set_name, word, *_OFFSET_WINDOW),
@@ -168,10 +168,15 @@ _POINT_COLUMNS = ["label", "set", "word", "F0", "F1", "F2", "F3"]
 
 
 def points_from_trajectory(traj: pl.DataFrame) -> pl.DataFrame:
+    classification: dict[str, bool] = classify_sets(traj)
     rows: list[dict[str, np.double | str]] = []
     for (_token_id,), token in traj.group_by("token_id", maintain_order=True):
         label: str = token["label"][0]
-        rows.extend(collapse_token(token, label))
+        normalized, _ = normalize_label(label)
+        set_name: str = get_set_name(normalized)
+        # Sets whose tokens were all unscorable fall back to the canonical prior.
+        is_diph: bool = classification.get(set_name, is_diphthong_set(set_name))
+        rows.extend(collapse_token(token, label, is_diph))
     return pl.DataFrame(
         rows,
         schema={

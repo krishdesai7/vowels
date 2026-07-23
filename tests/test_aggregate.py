@@ -78,7 +78,7 @@ def test_monophthong_yields_one_point() -> None:
     df = _frames(
         rel, [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800], [2000] * 11
     )
-    rows = collapse_token(df, "TRAP_cat")
+    rows = collapse_token(df, "TRAP_cat", is_diphthong=False)
     assert len(rows) == 1
     assert rows[0]["label"] == "TRAP_cat"
     assert rows[0]["set"] == "TRAP"
@@ -89,7 +89,7 @@ def test_monophthong_yields_one_point() -> None:
 def test_diphthong_yields_two_suffixed_points() -> None:
     rel = np.linspace(0.0, 1.0, 11)
     df = _frames(rel, [400] * 11, [2200] * 11)
-    rows = collapse_token(df, "PRICE_buy")
+    rows = collapse_token(df, "PRICE_buy", is_diphthong=True)
     assert [r["label"] for r in rows] == ["PRICE_buy:1", "PRICE_buy:2"]
     assert all(r["set"] == "PRICE" for r in rows)
 
@@ -100,7 +100,7 @@ def test_disyllabic_targets_second_syllable_window() -> None:
     f1 = np.array([500.0] * 21)
     f1[:14] += np.linspace(0, 60, 14)  # earlier frames vary
     df = _frames(rel, f1, [1600] * 21)
-    rows = collapse_token(df, "2leTTER_butter")
+    rows = collapse_token(df, "2leTTER_butter", is_diphthong=False)
     assert len(rows) == 1
     assert rows[0]["set"] == "leTTER"
     assert rows[0]["word"] == "butter"
@@ -110,7 +110,7 @@ def test_nan_f0_falls_back_to_token_mean() -> None:
     rel = np.linspace(0.0, 1.0, 5)
     f0 = [110.0, float("nan"), 130.0, 130.0, 110.0]
     df = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
-    rows = collapse_token(df, "KIT_bit")
+    rows = collapse_token(df, "KIT_bit", is_diphthong=False)
     # Formants are flat and Z0 is anchored per token, so every frame has zero
     # Bark velocity and the first candidate (index 1) wins. Its F0 is NaN, so
     # the point must fall back to the token mean of 110, 130, 130, 110.
@@ -124,38 +124,29 @@ def test_all_nan_f0_still_yields_a_point() -> None:
     rel = np.linspace(0.0, 1.0, 5)
     f1 = [500.0, 500.0, 700.0, 500.0, 500.0]
     df = _frames(rel, f1, [1500] * 5, f0=[float("nan")] * 5)
-    rows = collapse_token(df, "KIT_bit")
+    rows = collapse_token(df, "KIT_bit", is_diphthong=False)
     assert len(rows) == 1
     assert math.isnan(cast(float, rows[0]["F0"]))
     assert rows[0]["F1"] in (500.0, 700.0)
 
 
-def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
-    rel = list(np.linspace(0.0, 1.0, 11))
-
-    def block(token_id: int, label: str, f1: float, f2: float) -> pl.DataFrame:
-        return pl.DataFrame(
-            {
-                "token_id": [token_id] * 11,
-                "label": [label] * 11,
-                "rel_time": rel,
-                "F0": [120.0] * 11,
-                "F1_s": [float(f1)] * 11,
-                "F2_s": [float(f2)] * 11,
-                "F3_s": [2500.0] * 11,
-            }
-        )
+def test_points_from_trajectory_classifies_then_collapses() -> None:
+    n = 11
 
     traj = pl.concat(
         [
-            block(0, "TRAP_cat", 700, 1600),
-            block(1, "PRICE_buy", 400, 2200),
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "PRICE_buy", 700, _sweep(1000, 2400, n)),  # moves -> diph
         ]
     )
     points = points_from_trajectory(traj)
     assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
-    labels = sorted(points["label"].to_list())
-    assert labels == ["PRICE_buy:1", "PRICE_buy:2", "TRAP_cat"]
+    labels = points["label"].to_list()
+    assert "PRICE_buy:1" in labels and "PRICE_buy:2" in labels
+    assert "TRAP_cat" in labels and "TRAP_cat:1" not in labels
 
 
 def test_displacement_small_for_monophthong() -> None:

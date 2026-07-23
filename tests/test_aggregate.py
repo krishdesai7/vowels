@@ -202,42 +202,51 @@ def _sweep(a: float, b: float, n: int = 11) -> list[float]:
     return list(np.linspace(a, b, n))
 
 
+# Monophthong sets carrying a realistic spread of small displacements, so the
+# baseline has a meaningful Q3 and IQR rather than collapsing to zero. These
+# score roughly 0.00 / 0.18 / 0.43 / 0.84 Bark, giving Q3 ~= 0.54, IQR ~= 0.49
+# and therefore a far-outlier fence around 2.0.
+def _baseline_tokens() -> list[pl.DataFrame]:
+    return [
+        _token(0, "KIT_bit", 400, 2000),
+        _token(1, "DRESS_bed", 550, _sweep(1500, 1600)),
+        _token(2, "TRAP_cat", 700, _sweep(1500, 1750)),
+        _token(3, "LOT_cot", 650, _sweep(1400, 1900)),
+    ]
+
+
 def test_classify_flips_flat_canonical_diphthong_to_mono() -> None:
-    # Baseline: several flat canonical-monophthong sets. A canonical diphthong
-    # (GOAT) that is also flat must flip to monophthong; a canonical diphthong
-    # that sweeps (PRICE) must stay a diphthong.
+    # A canonical diphthong sitting inside the monophthong body flips; one that
+    # sweeps far past the fence keeps its diphthong label.
     traj = pl.concat(
-        [
-            _token(0, "KIT_bit", 400, 2000),
-            _token(1, "DRESS_bed", 550, 1900),
-            _token(2, "TRAP_cat", 700, 1800),
-            _token(3, "LOT_cot", 650, 1100),
-            _token(4, "GOAT_goat", 500, 1200),  # flat -> mono
-            _token(5, "PRICE_buy", 700, _sweep(1000, 2400)),  # sweep -> diph
-        ]
-    )
+        [*_baseline_tokens(), _token(4, "GOAT_goat", 500, 1200)]
+    )  # flat -> mono
     result = classify_sets(traj)
     assert result["GOAT"] is False
-    assert result["PRICE"] is True
     assert result["KIT"] is False
+
+    traj = pl.concat(
+        [*_baseline_tokens(), _token(4, "PRICE_buy", 700, _sweep(1000, 2400))]
+    )
+    assert classify_sets(traj)["PRICE"] is True
 
 
 def test_classify_keeps_borderline_at_prior() -> None:
-    # A canonical diphthong whose movement sits inside the hysteresis band
-    # keeps its canonical (diphthong) label.
+    # MOUTH moves more than the monophthong body (above Q3) but does not clear
+    # the far-outlier fence, so the dialect's expectation decides it.
     traj = pl.concat(
-        [
-            _token(0, "KIT_bit", 400, 2000),
-            _token(1, "DRESS_bed", 550, 1900),
-            _token(2, "TRAP_cat", 700, 1800),
-            _token(3, "LOT_cot", 650, 1100),
-            _token(
-                4, "MOUTH_out", 600, _sweep(1500, 1750)
-            ),  # mild move -> stays diph by prior
-        ]
+        [*_baseline_tokens(), _token(4, "MOUTH_out", 600, _sweep(1400, 1900))]
     )
-    result = classify_sets(traj)
-    assert result["MOUTH"] is True
+    assert classify_sets(traj)["MOUTH"] is True
+
+
+def test_classify_needs_strong_evidence_to_promote_a_monophthong() -> None:
+    # The same borderline movement on a canonically monophthongal set is NOT
+    # enough to promote it: only the far fence can override that prior.
+    traj = pl.concat(
+        [*_baseline_tokens(), _token(4, "FLEECE_bead", 350, _sweep(1400, 1900))]
+    )
+    assert classify_sets(traj)["FLEECE"] is False
 
 
 def test_classify_flips_moving_canonical_mono_to_diph() -> None:
@@ -296,6 +305,9 @@ def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
     traj.write_parquet(d / "sX_formants.parquet")
     monkeypatch.setattr(agg, "session_dir", lambda s: d)
 
-    center, spread, mono_bar, diph_bar = agg.baseline_bars("sX")
-    assert mono_bar == pytest.approx(center + agg.K_LOW * spread)
-    assert diph_bar == pytest.approx(center + agg.K_HIGH * spread)
+    q3, iqr, mono_bar, diph_bar = agg.baseline_bars("sX")
+    # A set is monophthongal inside the baseline body and diphthongal only
+    # beyond Tukey's far-outlier fence, so the bars straddle the pool.
+    assert mono_bar == pytest.approx(q3)
+    assert diph_bar == pytest.approx(q3 + agg._FAR_FENCE * iqr)
+    assert diph_bar > mono_bar

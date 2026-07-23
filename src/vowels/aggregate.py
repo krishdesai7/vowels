@@ -7,14 +7,13 @@ from numpy.typing import NDArray
 
 from .bark import add_bark_dims
 from .labels import (
-    DIPHTHONG_NAMES,
     SECOND_VOWEL_CENTER_RATIO,
     get_set_name,
-    is_diphthong_set,
     is_disyllabic,
     normalize_label,
 )
 from .paths import session_dir
+from .schema import Dialect, DialectProfile
 
 
 def _zscore[T: np.number](x: NDArray[T]) -> NDArray[np.double]:
@@ -37,9 +36,15 @@ _MONO_WINDOW: tuple[float, float] = (0.25, 0.75)
 _ONSET_WINDOW: tuple[float, float] = (0.25, 0.45)
 _OFFSET_WINDOW: tuple[float, float] = (0.55, 0.75)
 
-K_LOW: Final[float] = 2.0
-K_HIGH: Final[float] = 4.0
-MIN_SPREAD: Final[float] = 0.1  # Bark; guards a degenerate (zero-MAD) baseline
+# Tukey's far-outlier distance. A canonically monophthongal set must clear it
+# to be called a diphthong, so the bar always sits outside the baseline pool it
+# is derived from -- the flaw in an earlier centre + k*MAD rule, where a tightly
+# clustered pool drove the bar down among its own members.
+_FAR_FENCE: Final[float] = 3.0
+MIN_SPREAD: Final[float] = 0.1  # Bark; guards a degenerate (zero-IQR) baseline
+
+# Most recordings in this corpus are General American; override per session.
+DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
 
 
 def steady_state_index(
@@ -167,15 +172,19 @@ def collapse_token(
 _POINT_COLUMNS = ["label", "set", "word", "F0", "F1", "F2", "F3"]
 
 
-def points_from_trajectory(traj: pl.DataFrame) -> pl.DataFrame:
-    classification: dict[str, bool] = classify_sets(traj)
+def points_from_trajectory(
+    traj: pl.DataFrame, dialect: Dialect = DEFAULT_DIALECT
+) -> pl.DataFrame:
+    classification: dict[str, bool] = classify_sets(traj, dialect)
     rows: list[dict[str, np.double | str]] = []
     for (_token_id,), token in traj.group_by("token_id", maintain_order=True):
         label: str = token["label"][0]
         normalized, _ = normalize_label(label)
         set_name: str = get_set_name(normalized)
         # Sets whose tokens were all unscorable fall back to the canonical prior.
-        is_diph: bool = classification.get(set_name, is_diphthong_set(set_name))
+        is_diph: bool = classification.get(
+            set_name, set_name in dialect.profile.diphthongs
+        )
         rows.extend(collapse_token(token, label, is_diph))
     return pl.DataFrame(
         rows,
@@ -186,11 +195,11 @@ def points_from_trajectory(traj: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def load_points(session: str) -> pl.DataFrame:
+def load_points(session: str, dialect: Dialect = DEFAULT_DIALECT) -> pl.DataFrame:
     traj: pl.DataFrame = pl.read_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
-    return points_from_trajectory(traj)
+    return points_from_trajectory(traj, dialect)
 
 
 def _score_sets(
@@ -215,65 +224,97 @@ def _score_sets(
 
 
 def _baseline(
-    set_score: dict[str, float], disyll: dict[str, bool]
+    set_score: dict[str, float],
+    disyll: dict[str, bool],
+    profile: DialectProfile,
 ) -> tuple[float, float]:
+    """Q3 and IQR of this speaker's plain-monophthong displacements.
+
+    The pool is what a monophthong looks like *for this speaker*, so it admits
+    only sets that should not glide at all: the dialect's own non-diphthongs,
+    minus the disyllabics (measured on their second syllable, so not
+    comparable) and minus the r-coloured sets, whose falling F3 registers as
+    large spectral displacement without any gliding nucleus.
+    """
     mono: list[float] = [
         sc
         for s, sc in set_score.items()
-        if s not in DIPHTHONG_NAMES and not disyll.get(s, False)
+        if s not in profile.diphthongs
+        and s not in profile.r_colored
+        and not disyll.get(s, False)
     ]
     if not mono:
         return 0.0, MIN_SPREAD
     arr: NDArray[np.double] = np.array(mono)
-    center: float = float(np.median(arr))
-    spread: float = max(float(np.median(np.abs(arr - center))), MIN_SPREAD)
-    return center, spread
+    q1, q3 = (float(x) for x in np.percentile(arr, [25, 75]))
+    return q3, max(q3 - q1, MIN_SPREAD)
 
 
 def _decide(
-    set_name: str, score: float, center: float, spread: float, disyll: dict[str, bool]
+    set_name: str,
+    score: float,
+    q3: float,
+    iqr: float,
+    disyll: dict[str, bool],
+    profile: DialectProfile,
 ) -> bool:
+    """Mono/diphthong for one set, with the dialect's expectation as the prior.
+
+    The margins are deliberately asymmetric and both are anchored outside the
+    bulk of the baseline. Calling a canonically monophthongal set a diphthong
+    takes Tukey's far-outlier distance (Q3 + 3*IQR) -- it must be unlike this
+    speaker's monophthongs by a wide margin. Demoting a canonical diphthong
+    only requires it to sit inside the monophthong body (below Q3). Anything
+    between keeps the dialect's expectation, which is where genuinely
+    borderline sets belong.
+    """
     if disyll.get(set_name, False):
         return False
-    if score > center + K_HIGH * spread:
+    if score > q3 + _FAR_FENCE * iqr:
         return True
-    if score < center + K_LOW * spread:
+    if score <= q3:
         return False
-    return set_name in DIPHTHONG_NAMES
+    return set_name in profile.diphthongs
 
 
-def classify_sets(traj: pl.DataFrame) -> dict[str, bool]:
+def classify_sets(
+    traj: pl.DataFrame, dialect: Dialect = DEFAULT_DIALECT
+) -> dict[str, bool]:
+    profile: DialectProfile = dialect.profile
     set_score, _counts, disyll = _score_sets(traj)
-    center, spread = _baseline(set_score, disyll)
-    return {s: _decide(s, sc, center, spread, disyll) for s, sc in set_score.items()}
+    q3, iqr = _baseline(set_score, disyll, profile)
+    return {s: _decide(s, sc, q3, iqr, disyll, profile) for s, sc in set_score.items()}
 
 
-def baseline_bars(session: str) -> tuple[float, float, float, float]:
+def baseline_bars(
+    session: str, dialect: Dialect = DEFAULT_DIALECT
+) -> tuple[float, float, float, float]:
     """The session's monophthong baseline and the two decision bars.
 
-    Returns (center, spread, mono_bar, diph_bar), all in Bark. A set scoring
-    below mono_bar is a monophthong, above diph_bar a diphthong; in between the
-    canonical prior wins.
+    Returns (q3, iqr, mono_bar, diph_bar), all in Bark. A set scoring below
+    mono_bar is a monophthong, above diph_bar a diphthong; in between the
+    dialect's expectation wins.
     """
     traj: pl.DataFrame = pl.read_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
     set_score, _counts, disyll = _score_sets(traj)
-    center, spread = _baseline(set_score, disyll)
-    return center, spread, center + K_LOW * spread, center + K_HIGH * spread
+    q3, iqr = _baseline(set_score, disyll, dialect.profile)
+    return q3, iqr, q3, q3 + _FAR_FENCE * iqr
 
 
-def diphthong_report(session: str) -> pl.DataFrame:
+def diphthong_report(session: str, dialect: Dialect = DEFAULT_DIALECT) -> pl.DataFrame:
+    profile: DialectProfile = dialect.profile
     traj: pl.DataFrame = pl.read_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
     set_score, counts, disyll = _score_sets(traj)
-    center, spread = _baseline(set_score, disyll)
+    q3, iqr = _baseline(set_score, disyll, profile)
     rows: list[dict[str, object]] = []
     for set_name in sorted(set_score):
-        canonical_diph: bool = set_name in DIPHTHONG_NAMES
+        canonical_diph: bool = set_name in profile.diphthongs
         final_diph: bool = _decide(
-            set_name, set_score[set_name], center, spread, disyll
+            set_name, set_score[set_name], q3, iqr, disyll, profile
         )
         rows.append(
             {

@@ -4,8 +4,8 @@ import polars as pl
 import typer
 
 from . import (
-    K_HIGH,
-    K_LOW,
+    DEFAULT_DIALECT,
+    Dialect,
     Gender,
     baseline_bars,
     detect_silences,
@@ -94,15 +94,23 @@ def projections(session: str) -> None:
 
 
 @app.command()
-def diphthongs(session: str) -> None:
+def diphthongs(
+    session: str,
+    dialect: Annotated[
+        Dialect,
+        typer.Option(
+            "--dialect", "-d", help="Speaker dialect (GA/RP)", case_sensitive=False
+        ),
+    ] = DEFAULT_DIALECT,
+) -> None:
     """Report per-set mono/diphthong classification and the flips from canonical."""
-    report = diphthong_report(session)
-    center, spread, mono_bar, diph_bar = baseline_bars(session)
+    report = diphthong_report(session, dialect)
+    q3, iqr, mono_bar, diph_bar = baseline_bars(session, dialect)
     with pl.Config(tbl_rows=-1):
         print(report)
     print(
-        f"baseline: center={center:.3f} spread={spread:.3f}  "
-        f"(k_low={K_LOW} -> {mono_bar:.3f}, k_high={K_HIGH} -> {diph_bar:.3f})"
+        f"baseline ({dialect.name}): Q3={q3:.3f} IQR={iqr:.3f}  "
+        f"(monophthong if < {mono_bar:.3f}, diphthong if > {diph_bar:.3f})"
     )
 
 

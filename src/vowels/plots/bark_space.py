@@ -5,6 +5,7 @@ import altair as alt
 import plotly.graph_objects as go
 import polars as pl
 
+from ..aggregate import load_points
 from ..bark import add_bark_dims
 from ..paths import data_dir, session_dir
 from ..schema import GROUPS, Wells
@@ -15,8 +16,6 @@ DIV_ID: Final[str] = "bark-plot"
 
 
 def _load_formants(session: str) -> pl.DataFrame:
-    from ..aggregate import load_points
-
     return load_points(session).pipe(add_bark_dims).filter(pl.col("F0").is_not_nan())
 
 
@@ -54,7 +53,7 @@ def build_bark_chart(df: pl.DataFrame, session: str) -> go.Figure:
     has_diph: bool = not diph_df.is_empty()
 
     all_sets: list[str] = sorted(df["set"].unique().to_list())
-    color_map: dict[str, str] = {s: Wells[s].value for s in all_sets}
+    color_map: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     std_df: pl.DataFrame = _load_std(["Openness", "Frontness", "Roundness"])
     traces: list[go.Scatter3d] = [
@@ -407,7 +406,7 @@ def save_bark_chart(session: str) -> None:
     df: pl.DataFrame = _load_formants(session)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
-    set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
+    set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     fig: go.Figure = build_bark_chart(df, session)
     html: str = fig.to_html(
@@ -705,7 +704,7 @@ def build_bark_projections(df: pl.DataFrame, session: str) -> alt.HConcatChart:
 
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_scale: alt.Scale = alt.Scale(
-        domain=all_sets, range=[Wells[s].value for s in all_sets]
+        domain=all_sets, range=[Wells[s].color for s in all_sets]
     )
 
     words_param: alt.Parameter = alt.param(name="showWords", value=True)
@@ -760,7 +759,7 @@ def save_bark_projections(session: str) -> None:
     df: pl.DataFrame = _load_formants(session)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
-    set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
+    set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_bark_projections.html"
     html: str = build_bark_projections(df, session).to_html()

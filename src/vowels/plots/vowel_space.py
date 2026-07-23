@@ -26,7 +26,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
     all_sets: list[str] = sorted(df["set"].unique().to_list())
     color_scale: alt.Scale = alt.Scale(
         domain=all_sets,
-        range=[Wells[s].value for s in all_sets],
+        range=[Wells[s].color for s in all_sets],
     )
 
     # Granularity / type toggles
@@ -437,7 +437,7 @@ def save_chart(session: str) -> None:
     df: pl.DataFrame = load_points(session)
     has_diph: bool = df["label"].str.contains(":").any()
     all_sets: list[str] = sorted(df["set"].unique().to_list())
-    set_colors: dict[str, str] = {s: Wells[s].value for s in all_sets}
+    set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_vowel_space.html"
     html: str = build_chart(df, session).to_html()

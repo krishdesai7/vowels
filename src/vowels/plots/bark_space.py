@@ -15,9 +15,7 @@ from .vowel_space import _inject_controls, _text_color
 DIV_ID: Final[str] = "bark-plot"
 
 
-def _load_formants(
-    session: str, dialect: Dialect = DEFAULT_DIALECT
-) -> pl.DataFrame:
+def _load_formants(session: str, dialect: Dialect = DEFAULT_DIALECT) -> pl.DataFrame:
     return (
         load_points(session, dialect)
         .pipe(add_bark_dims)

@@ -1,5 +1,6 @@
 from typing import Final
 
+from .aggregate import K_HIGH, K_LOW, baseline_bars, diphthong_report
 from .labels import SECOND_VOWEL_CENTER_RATIO
 from .paths import project_root, session_dir
 from .pipeline import (
@@ -31,4 +32,8 @@ __all__: Final[list[str]] = [
     "save_chart",
     "save_bark_chart",
     "save_bark_projections",
+    "K_LOW",
+    "K_HIGH",
+    "baseline_bars",
+    "diphthong_report",
 ]

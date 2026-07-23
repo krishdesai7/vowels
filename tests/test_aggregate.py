@@ -252,3 +252,50 @@ def test_classify_flips_moving_canonical_mono_to_diph() -> None:
     )
     result = classify_sets(traj)
     assert result["FLEECE"] is True
+
+
+def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
+    import vowels.aggregate as agg
+
+    traj = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "GOAT_goat", 500, 1200),  # flat canonical diphthong -> flips
+        ]
+    )
+    d = tmp_path / "sX"
+    d.mkdir()
+    traj.write_parquet(d / "sX_formants.parquet")
+    monkeypatch.setattr(agg, "session_dir", lambda s: d)
+
+    report = agg.diphthong_report("sX")
+    assert set(report.columns) == {"set", "n", "score", "canonical", "final", "flipped"}
+    goat = report.filter(pl.col("set") == "GOAT").row(0, named=True)
+    assert goat["canonical"] == "diphthong"
+    assert goat["final"] == "monophthong"
+    assert goat["flipped"] is True
+
+
+def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
+    import vowels.aggregate as agg
+
+    traj = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "GOAT_goat", 500, 1200),
+        ]
+    )
+    d = tmp_path / "sX"
+    d.mkdir()
+    traj.write_parquet(d / "sX_formants.parquet")
+    monkeypatch.setattr(agg, "session_dir", lambda s: d)
+
+    center, spread, mono_bar, diph_bar = agg.baseline_bars("sX")
+    assert mono_bar == pytest.approx(center + agg.K_LOW * spread)
+    assert diph_bar == pytest.approx(center + agg.K_HIGH * spread)

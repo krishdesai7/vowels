@@ -246,3 +246,53 @@ def classify_sets(traj: pl.DataFrame) -> dict[str, bool]:
     set_score, _counts, disyll = _score_sets(traj)
     center, spread = _baseline(set_score, disyll)
     return {s: _decide(s, sc, center, spread, disyll) for s, sc in set_score.items()}
+
+
+def baseline_bars(session: str) -> tuple[float, float, float, float]:
+    """The session's monophthong baseline and the two decision bars.
+
+    Returns (center, spread, mono_bar, diph_bar), all in Bark. A set scoring
+    below mono_bar is a monophthong, above diph_bar a diphthong; in between the
+    canonical prior wins.
+    """
+    traj: pl.DataFrame = pl.read_parquet(
+        session_dir(session) / f"{session}_formants.parquet"
+    )
+    set_score, _counts, disyll = _score_sets(traj)
+    center, spread = _baseline(set_score, disyll)
+    return center, spread, center + K_LOW * spread, center + K_HIGH * spread
+
+
+def diphthong_report(session: str) -> pl.DataFrame:
+    traj: pl.DataFrame = pl.read_parquet(
+        session_dir(session) / f"{session}_formants.parquet"
+    )
+    set_score, counts, disyll = _score_sets(traj)
+    center, spread = _baseline(set_score, disyll)
+    rows: list[dict[str, object]] = []
+    for set_name in sorted(set_score):
+        canonical_diph: bool = set_name in DIPHTHONG_NAMES
+        final_diph: bool = _decide(
+            set_name, set_score[set_name], center, spread, disyll
+        )
+        rows.append(
+            {
+                "set": set_name,
+                "n": counts.get(set_name, 0),
+                "score": round(set_score[set_name], 3),
+                "canonical": "diphthong" if canonical_diph else "monophthong",
+                "final": "diphthong" if final_diph else "monophthong",
+                "flipped": canonical_diph != final_diph,
+            }
+        )
+    return pl.DataFrame(
+        rows,
+        schema={
+            "set": pl.Utf8,
+            "n": pl.Int64,
+            "score": pl.Float64,
+            "canonical": pl.Utf8,
+            "final": pl.Utf8,
+            "flipped": pl.Boolean,
+        },
+    )

@@ -1,10 +1,15 @@
 from typing import Annotated
 
+import polars as pl
 import typer
 
 from . import (
+    K_HIGH,
+    K_LOW,
     Gender,
+    baseline_bars,
     detect_silences,
+    diphthong_report,
     extract_formants,
     label_textgrid,
     save_bark_chart,
@@ -86,6 +91,19 @@ def bark(session: str) -> None:
 def projections(session: str) -> None:
     """Generate three 2D Bark Z projection plots (Frontness×Openness, ×Roundness, Openness×Roundness)."""
     save_bark_projections(session)
+
+
+@app.command()
+def diphthongs(session: str) -> None:
+    """Report per-set mono/diphthong classification and the flips from canonical."""
+    report = diphthong_report(session)
+    center, spread, mono_bar, diph_bar = baseline_bars(session)
+    with pl.Config(tbl_rows=-1):
+        print(report)
+    print(
+        f"baseline: center={center:.3f} spread={spread:.3f}  "
+        f"(k_low={K_LOW} -> {mono_bar:.3f}, k_high={K_HIGH} -> {diph_bar:.3f})"
+    )
 
 
 @app.command()

@@ -56,7 +56,11 @@ def label_textgrid(session: str) -> None:
 
 
 def _write_diagnostic_csv(
-    tg, tier_number: int, n_intervals: int, labels: list[str], out_path: Path
+    tg: parselmouth.TextGrid,
+    tier_number: int,
+    n_intervals: int,
+    labels: list[str],
+    out_path: Path,
 ) -> None:
     label_idx = 0
     rows: list[dict[str, int | float | str | None]] = []
@@ -91,7 +95,9 @@ def _write_diagnostic_csv(
         writer.writerows(rows)
 
 
-def _label_from_csv(tg, tier_number: int, csv_path: Path, out_path: Path) -> None:
+def _label_from_csv(
+    tg: parselmouth.TextGrid, tier_number: int, csv_path: Path, out_path: Path
+) -> None:
     with open(csv_path, newline="", encoding="utf-8") as f:
         rows: list[dict[str, str]] = list(csv.DictReader(f))
 

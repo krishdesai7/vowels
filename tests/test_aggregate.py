@@ -1,9 +1,11 @@
 import math
+from collections.abc import Sequence
 from typing import cast
 
 import numpy as np
 import polars as pl
 import pytest
+from numpy.typing import NDArray
 
 from vowels.aggregate import (
     classify_sets,
@@ -48,7 +50,17 @@ def test_empty_window_falls_back_to_all_frames() -> None:
     assert 0 <= idx <= 4
 
 
-def _frames(rel, f1, f2, f3=None, f0=None) -> pl.DataFrame:
+"""A frame-wise numeric column: a Python sequence or a numpy array."""
+Nums = Sequence[float] | NDArray[np.double]
+
+
+def _frames(
+    rel: Nums,
+    f1: Nums,
+    f2: Nums,
+    f3: Nums | None = None,
+    f0: Nums | None = None,
+) -> pl.DataFrame:
     n = len(rel)
     return pl.DataFrame(
         {
@@ -121,7 +133,7 @@ def test_all_nan_f0_still_yields_a_point() -> None:
 def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
     rel = list(np.linspace(0.0, 1.0, 11))
 
-    def block(token_id, label, f1, f2):
+    def block(token_id: int, label: str, f1: float, f2: float) -> pl.DataFrame:
         return pl.DataFrame(
             {
                 "token_id": [token_id] * 11,
@@ -167,7 +179,20 @@ def test_displacement_nan_without_f0() -> None:
     assert math.isnan(token_displacement(df))
 
 
-def _token(token_id, label, f1, f2, n=11):
+def _col(v: float | Nums, n: int) -> list[float]:
+    """Broadcast a scalar to n frames, or pass a per-frame sequence through."""
+    if isinstance(v, (int, float)):
+        return [float(v)] * n
+    return [float(x) for x in v]
+
+
+def _token(
+    token_id: int,
+    label: str,
+    f1: float | Nums,
+    f2: float | Nums,
+    n: int = 11,
+) -> pl.DataFrame:
     rel = list(np.linspace(0.0, 1.0, n))
     return pl.DataFrame(
         {
@@ -175,18 +200,14 @@ def _token(token_id, label, f1, f2, n=11):
             "label": [label] * n,
             "rel_time": rel,
             "F0": [120.0] * n,
-            "F1_s": [float(x) for x in f1]
-            if hasattr(f1, "__len__")
-            else [float(f1)] * n,
-            "F2_s": [float(x) for x in f2]
-            if hasattr(f2, "__len__")
-            else [float(f2)] * n,
+            "F1_s": _col(f1, n),
+            "F2_s": _col(f2, n),
             "F3_s": [2500.0] * n,
         }
     )
 
 
-def _sweep(a, b, n=11):
+def _sweep(a: float, b: float, n: int = 11) -> list[float]:
     return list(np.linspace(a, b, n))
 
 

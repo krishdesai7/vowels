@@ -4,7 +4,7 @@ from pathlib import Path
 import altair as alt
 import polars as pl
 
-from ..aggregate import DEFAULT_DIALECT, load_points
+from ..aggregate import load_points
 from ..paths import data_dir, session_dir
 from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
@@ -17,13 +17,13 @@ def _text_color(hex_color: str) -> str:
     return "#333" if (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 else "white"
 
 
-def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetChart:
+def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetChart:
     is_diph: pl.Expr = pl.col("label").str.contains(":")
-    mono_df: pl.DataFrame = df.filter(~is_diph)
-    diph_df: pl.DataFrame = df.filter(is_diph)
-    has_diph: bool = not diph_df.is_empty()
+    mono_lf: pl.LazyFrame = lf.filter(~is_diph)
+    diph_lf: pl.LazyFrame = lf.filter(is_diph)
+    has_diph: bool = True
 
-    all_sets: list[str] = sorted(df["set"].unique().to_list())
+    all_sets: list[str] = sorted(lf.select("set").unique().collect()["set"].to_list())
     color_scale: alt.Scale = alt.Scale(
         domain=all_sets,
         range=[Wells[s].color for s in all_sets],
@@ -67,9 +67,9 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 2: Confidence ellipses (monophthongs only)
     ellipse_records: list[dict] = []
-    for s in sorted(mono_df["set"].unique().to_list()):
-        subset: pl.DataFrame = mono_df.filter(pl.col("set") == s)
-        if len(subset) < 3:
+    for s in sorted(mono_lf.select("set").unique().collect()["set"].to_list()):
+        subset: pl.DataFrame = mono_lf.filter("set" == s).collect()
+        if subset.height < 3:
             continue
         pts: list[dict] | None = precompute_ellipse(
             subset["F2"].to_numpy(), subset["F1"].to_numpy()
@@ -100,7 +100,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 3: Monophthong tokens
     layers.append(
-        alt.Chart(mono_df)
+        alt.Chart(mono_lf)
         .mark_circle(size=60, stroke="white", strokeWidth=0.5)
         .encode(
             x=alt.X("F2:Q", scale=alt.Scale(reverse=True), title="F2 (Hz)"),
@@ -123,7 +123,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 4: Per-set means (monophthongs only)
     layers.append(
-        alt.Chart(mono_df.group_by("set").agg(pl.col("F1").mean(), pl.col("F2").mean()))
+        alt.Chart(mono_lf.group_by("set").agg(pl.col.F1.mean(), pl.col.F2.mean()))
         .mark_point(
             shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
         )
@@ -144,7 +144,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layers 5+: Diphthong tokens and mean trajectories with directional arrows
     if has_diph:
-        diph_df = diph_df.with_columns(
+        diph_lf = diph_lf.with_columns(
             pl.col("label").str.split(":").list.first().alias("token"),
             pl.col("label")
             .str.split(":")
@@ -152,17 +152,17 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
             .cast(pl.Int32)
             .alias("point_num"),
         )
-        diph_means_df: pl.DataFrame = (
-            diph_df.group_by(["set", "point_num"])
-            .agg(pl.col("F1").mean(), pl.col("F2").mean())
+        diph_means_lf: pl.LazyFrame = (
+            diph_lf.group_by(["set", "point_num"])
+            .agg(pl.col.F1.mean(), pl.col.F2.mean())
             .sort(["set", "point_num"])
         )
 
         # Axis spans for normalising arrowhead angles into screen space.
         # x=F2 reversed → screen moves left as F2 rises; y=F1 reversed → same.
         # Chart pixel dims (650×550) are folded in so angles are visually correct.
-        F2_rng: float = float((mono_df["F2"].max() - mono_df["F2"].min()) or 1.0)  # type: ignore
-        F1_rng: float = float((mono_df["F1"].max() - mono_df["F1"].min()) or 1.0)  # type: ignore
+        F2_rng: float = (mono_lf["F2"].max() - mono_lf["F2"].min()) or 1.0  # type: ignore
+        F1_rng: float = (mono_lf["F1"].max() - mono_lf["F1"].min()) or 1.0  # type: ignore
         W, H = 650.0, 550.0
 
         def _angle_expr() -> pl.Expr:
@@ -175,29 +175,33 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
                 .alias("angle")
             )
 
-        pt1_t: pl.DataFrame = diph_df.filter(pl.col("point_num") == 1)[
-            ["token", "set", "F1", "F2"]
-        ].rename({"F1": "F1_s", "F2": "F2_s"})
-        pt2_t: pl.DataFrame = diph_df.filter(pl.col("point_num") == 2)[
-            ["token", "set", "F1", "F2", "word"]
-        ]
-        tok_arr: pl.DataFrame = pt2_t.join(pt1_t, on=["token", "set"]).with_columns(
+        pt1_t: pl.LazyFrame = (
+            diph_lf.filter("point_num" == 1)
+            .select("token", "set", "F1", "F2")
+            .rename({"F1": "F1_s", "F2": "F2_s"})
+        )
+        pt2_t: pl.LazyFrame = diph_lf.filter("point_num" == 2).select(
+            "token", "set", "F1", "F2", "word"
+        )
+        tok_arr: pl.LazyFrame = pt2_t.join(pt1_t, on=["token", "set"]).with_columns(
             _angle_expr()
         )
 
-        pt1_m: pl.DataFrame = diph_means_df.filter(pl.col("point_num") == 1)[
+        pt1_m: pl.LazyFrame = (
+            diph_means_lf.filter("point_num" == 1)
+            .select(["set", "F1", "F2"])
+            .rename({"F1": "F1_s", "F2": "F2_s"})
+        )
+        pt2_m: pl.LazyFrame = diph_means_lf.filter("point_num" == 2).select(
             ["set", "F1", "F2"]
-        ].rename({"F1": "F1_s", "F2": "F2_s"})
-        pt2_m: pl.DataFrame = diph_means_df.filter(pl.col("point_num") == 2)[
-            ["set", "F1", "F2"]
-        ]
-        mean_arr: pl.DataFrame = pt2_m.join(pt1_m, on="set").with_columns(_angle_expr())
+        )
+        mean_arr: pl.LazyFrame = pt2_m.join(pt1_m, on="set").with_columns(_angle_expr())
 
         ang_scale: alt.Scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
 
         # Token lines
         layers.append(
-            alt.Chart(diph_df)
+            alt.Chart(diph_lf)
             .mark_line(strokeWidth=1.5)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -212,7 +216,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Start dots at point 1
         layers.append(
-            alt.Chart(diph_df.filter(pl.col("point_num") == 1))
+            alt.Chart(diph_lf.filter("point_num" == 1))
             .mark_point(shape="circle", size=25, filled=True)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -245,7 +249,7 @@ def build_chart(df: pl.DataFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Mean line
         layers.append(
-            alt.Chart(diph_means_df)
+            alt.Chart(diph_means_lf)
             .mark_line(strokeWidth=5)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -433,14 +437,13 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
     return html
 
 
-def save_chart(session: str, dialect: Dialect = DEFAULT_DIALECT) -> None:
-    df: pl.DataFrame = load_points(session, dialect)
-    has_diph: bool = df["label"].str.contains(":").any()
-    all_sets: list[str] = sorted(df["set"].unique().to_list())
+def save_chart(session: str, dialect: Dialect) -> None:
+    lf: pl.LazyFrame = load_points(session, dialect)
+    all_sets: list[str] = sorted(lf.select("set").unique().collect()["set"].to_list())
     set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_vowel_space.html"
-    html: str = build_chart(df, session).to_html()
-    html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
+    html: str = build_chart(lf, session).to_html()
+    html = _inject_controls(html, has_diph=True, set_colors=set_colors)
     out_path.write_text(html)
     print(f"Created {out_path}")

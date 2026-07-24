@@ -1,6 +1,7 @@
 from typing import Final
 
-from .aggregate import DEFAULT_DIALECT, baseline_bars, diphthong_report
+from .aggregate import baseline_bars, diphthong_report
+from .cli import DEFAULT_DIALECT
 from .labels import SECOND_VOWEL_CENTER_RATIO
 from .paths import project_root, session_dir
 from .pipeline import (
@@ -32,8 +33,8 @@ __all__: Final[list[str]] = [
     "save_chart",
     "save_bark_chart",
     "save_bark_projections",
-    "DEFAULT_DIALECT",
     "Dialect",
     "baseline_bars",
     "diphthong_report",
+    "DEFAULT_DIALECT",
 ]

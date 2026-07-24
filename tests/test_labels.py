@@ -2,6 +2,7 @@ import pytest
 
 from vowels.labels import (
     DIPHTHONG_NAMES,
+    DIPHTHONGS,
     DISYLLABLE_PREFIX,
     SECOND_VOWEL_CENTER_RATIO,
     get_set_name,
@@ -43,6 +44,4 @@ def test_is_diphthong_set() -> None:
 
 
 def test_diphthong_names_match_schema() -> None:
-    from vowels.schema import DIPHTHONGS
-
     assert DIPHTHONG_NAMES == frozenset(w.name for w in DIPHTHONGS)

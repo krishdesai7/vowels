@@ -13,8 +13,7 @@ def label_textgrid(session: str) -> None:
     out_path: Path = d / f"{session}_labeled.TextGrid"
     intervals_csv: Path = d / f"{session}_intervals.csv"
 
-    labels_path: Path = labels_file(session)
-    with open(labels_path, encoding="utf-8") as f:
+    with labels_file(session).open(encoding="utf-8") as f:
         labels: list[str] = [ln.strip() for ln in f if ln.strip()]
 
     tg: parselmouth.TextGrid = parselmouth.read(tg_path.as_posix())
@@ -89,7 +88,7 @@ def _write_diagnostic_csv(
             }
         )
 
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
+    with out_path.open("w", newline="", encoding="utf-8") as f:
         writer: csv.DictWriter[str] = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
@@ -98,7 +97,7 @@ def _write_diagnostic_csv(
 def _label_from_csv(
     tg: parselmouth.TextGrid, tier_number: int, csv_path: Path, out_path: Path
 ) -> None:
-    with open(csv_path, newline="", encoding="utf-8") as f:
+    with csv_path.open(newline="", encoding="utf-8") as f:
         rows: list[dict[str, str]] = list(csv.DictReader(f))
 
     for row in rows:

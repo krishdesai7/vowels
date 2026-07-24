@@ -6,7 +6,9 @@ import numpy as np
 import parselmouth
 import polars as pl
 import pytest
+from numpy.typing import NDArray
 
+import vowels.pipeline.formants as formants_mod
 from vowels import parse_labels
 from vowels.pipeline.formants import _gender_params, extract_formants, winner_to_rows
 from vowels.schema import Gender
@@ -14,7 +16,7 @@ from vowels.schema import Gender
 REQUIRED_COLUMNS: Final[set[str]] = {"time", "label", "F1", "F2", "F3", "set", "word"}
 
 
-def _make_df(labels: list[str]) -> pl.LazyFrame:
+def _make_lf(labels: list[str]) -> pl.LazyFrame:
     n: int = len(labels)
     return parse_labels(
         pl.LazyFrame(
@@ -30,7 +32,7 @@ def _make_df(labels: list[str]) -> pl.LazyFrame:
 
 
 def test_output_has_required_columns() -> None:
-    df: pl.LazyFrame = _make_df(["FLEECE_beat", "TRAP_bad"])
+    df: pl.LazyFrame = _make_lf(["FLEECE_beat", "TRAP_bad"])
     assert REQUIRED_COLUMNS.issubset(set(df.collect_schema().names()))
 
 
@@ -43,41 +45,17 @@ def test_no_null_set_or_word_for_standard_labels() -> None:
         "2haPPY_city",
         "PRICE_try:1",
     ]
-    df: pl.LazyFrame = _make_df(labels)
-    assert (
-        df.select(pl.col("set"))
-        .unique()
-        .collect()
-        .get_column("set")
-        .to_list()
-        .count(None)
-        == 0
-    )
-    assert (
-        df.select(pl.col("word"))
-        .unique()
-        .collect()
-        .get_column("word")
-        .to_list()
-        .count(None)
-        == 0
-    )
+    df: pl.LazyFrame = _make_lf(labels)
+    actual: tuple[int, int] = df.select("set", "word").unique().collect().row(0)
+    assert actual == (0, 0)
 
 
 def test_time_and_formant_columns_preserved() -> None:
-    df: pl.LazyFrame = _make_df(["KIT_sit"])
-    assert df.select(pl.col("time")).unique().collect().get_column("time").to_list()[
-        0
-    ] == pytest.approx(0.0)
-    assert df.select(pl.col("F1")).unique().collect().get_column("F1").to_list()[
-        0
-    ] == pytest.approx(500.0)
-    assert df.select(pl.col("F2")).unique().collect().get_column("F2").to_list()[
-        0
-    ] == pytest.approx(1500.0)
-    assert df.select(pl.col("F3")).unique().collect().get_column("F3").to_list()[
-        0
-    ] == pytest.approx(2500.0)
+    lf: pl.LazyFrame = _make_lf(["KIT_sit"])
+    actual: tuple[float, float, float, float] = (
+        lf.select("time", "F1", "F2", "F3").unique().collect().row(0)
+    )
+    assert actual == (0.0, 500.0, 1500.0, 2500.0)
 
 
 def test_winner_to_rows_schema_and_rel_time() -> None:
@@ -101,10 +79,12 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
             "error": [0.1] * 3,
         }
     )
-    f0 = np.array([120.0, 121.0, 119.0])
-    rows = winner_to_rows(winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2)
+    f0: NDArray[np.double] = np.array([120.0, 121.0, 119.0])
+    rows: list[dict[str, float | int | bool]] = winner_to_rows(
+        winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2
+    )
     assert len(rows) == 3
-    EXPECTED_KEYS = {
+    EXPECTED_KEYS: set[str] = {
         "token_id",
         "label",
         "set",
@@ -157,7 +137,7 @@ def test_winner_to_rows_zero_span_guard() -> None:
             "error": [0.1],
         }
     )
-    rows = winner_to_rows(
+    rows: list[dict[str, float | int | bool]] = winner_to_rows(
         winner, np.array([120.0]), token_id=0, label="TRAP_cat", t1=1.0, t2=1.0
     )
     assert rows[0]["rel_time"] == pytest.approx(0.0)
@@ -170,7 +150,7 @@ def test_winner_to_rows_rel_time_in_unit_range_for_late_interval() -> None:
     # the earlier bug subtracted t1 from an already-relative time, producing
     # rel_time near -100 and disabling the steady-state window entirely.
     t1, t2 = 47.36, 47.80  # span 0.44, like NORTH_born in session4
-    times = [0.026, 0.20, 0.414]  # interval-relative, edge-trimmed
+    times: list[float] = [0.026, 0.20, 0.414]  # interval-relative, edge-trimmed
     winner = pl.DataFrame(
         {
             "time": times,
@@ -187,7 +167,7 @@ def test_winner_to_rows_rel_time_in_unit_range_for_late_interval() -> None:
             "error": [0.1] * 3,
         }
     )
-    rows = winner_to_rows(
+    rows: list[dict[str, float | int | bool]] = winner_to_rows(
         winner,
         np.array([120.0, 121.0, 119.0]),
         token_id=0,
@@ -195,7 +175,7 @@ def test_winner_to_rows_rel_time_in_unit_range_for_late_interval() -> None:
         t1=t1,
         t2=t2,
     )
-    rels = [r["rel_time"] for r in rows]
+    rels: list[float] = [r["rel_time"] for r in rows]
     assert all(0.0 <= r <= 1.0 for r in rels), rels
     assert rels[0] == pytest.approx(0.026 / 0.44)
 
@@ -215,7 +195,7 @@ def test_gender_params_male() -> None:
 
 
 def test_gender_params_non_male() -> None:
-    expected = {
+    expected: dict[str, float | int] = {
         "min_max_formant": 5000,
         "max_max_formant": 6500,
         "window_length": 0.030,
@@ -235,10 +215,8 @@ def test_extract_formants_orchestration(
 ) -> None:
     """Verify extract_formants loops correctly: skips silent/empty intervals
     and writes the expected trajectory parquet schema."""
-    import vowels.pipeline.formants as formants_mod
-
-    session = "s_test"
-    session_d = tmp_path / session
+    session: str = "s_test"
+    session_d: Path = tmp_path / session
     session_d.mkdir()
 
     # Redirect all session path resolution into tmp_path
@@ -251,13 +229,15 @@ def test_extract_formants_orchestration(
     # Intervals: [0.00, 0.05] "silent"  (skipped — label check)
     #            [0.05, 0.50] "FLEECE_beat"  (processed, token_id 0)
     #            [0.50, 1.00] "PRICE_buy"   (processed, token_id 1)
-    tg = parselmouth.praat.call("Create TextGrid", 0.0, 1.0, "silences", "")
+    tg: parselmouth.TextGrid = parselmouth.praat.call(
+        "Create TextGrid", 0.0, 1.0, "silences", ""
+    )
     parselmouth.praat.call(tg, "Insert boundary", 1, 0.05)
     parselmouth.praat.call(tg, "Insert boundary", 1, 0.5)
     parselmouth.praat.call(tg, "Set interval text", 1, 1, "silent")
     parselmouth.praat.call(tg, "Set interval text", 1, 2, "FLEECE_beat")
     parselmouth.praat.call(tg, "Set interval text", 1, 3, "PRICE_buy")
-    tg_path = session_d / f"{session}_labeled.TextGrid"
+    tg_path: Path = session_d / f"{session}_labeled.TextGrid"
     parselmouth.praat.call(tg, "Write to text file", str(tg_path))
 
     # Stub: process_audio_file -> fake candidates with 3 frames each call
@@ -278,18 +258,18 @@ def test_extract_formants_orchestration(
             "error": [0.01] * n_frames,
         }
     )
-    _f0 = np.array([120.0, 121.0, 119.0])
-    _fake_winner = SimpleNamespace(to_df=lambda output: _winner_df)
-    _fake_candidates = SimpleNamespace(winner=_fake_winner, f0=_f0)
+    _f0: NDArray[np.double] = np.array([120.0, 121.0, 119.0])
+    _fake_winner: SimpleNamespace = SimpleNamespace(to_df=lambda output: _winner_df)
+    _fake_candidates: SimpleNamespace = SimpleNamespace(winner=_fake_winner, f0=_f0)
     monkeypatch.setattr(
         formants_mod, "process_audio_file", lambda *a, **kw: _fake_candidates
     )
 
     extract_formants(session, Gender.M)
 
-    out = pl.read_parquet(session_d / f"{session}_formants.parquet")
+    out: pl.LazyFrame = pl.scan_parquet(session_d / f"{session}_formants.parquet")
 
-    EXPECTED_COLS = {
+    EXPECTED_COLS: set[str] = {
         "token_id",
         "label",
         "set",
@@ -314,12 +294,13 @@ def test_extract_formants_orchestration(
     assert EXPECTED_COLS.issubset(set(out.columns))
 
     # Silent interval was skipped -> exactly 2 unique token_ids
-    assert out["token_id"].n_unique() == 2
+    actual: pl.DataFrame = out.select("token_id", "set").collect()
+    assert actual.unique().height == 2
 
-    fleece = out.filter(pl.col("set") == "FLEECE")
-    price = out.filter(pl.col("set") == "PRICE")
+    fleece: pl.DataFrame = actual.filter(pl.col("set") == "FLEECE")
+    price: pl.DataFrame = actual.filter(pl.col("set") == "PRICE")
     assert not fleece.is_empty()
     assert not price.is_empty()
     # FLEECE is a monophthong; PRICE is a diphthong
-    assert fleece["is_diphthong"][0] == False  # noqa: E712
-    assert price["is_diphthong"][0] == True  # noqa: E712
+    assert not fleece["is_diphthong"][0]
+    assert price["is_diphthong"][0]

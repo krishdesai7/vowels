@@ -43,9 +43,6 @@ _OFFSET_WINDOW: tuple[float, float] = (0.55, 0.75)
 _FAR_FENCE: Final[float] = 3.0
 MIN_SPREAD: Final[float] = 0.1  # Bark; guards a degenerate (zero-IQR) baseline
 
-# Most recordings in this corpus are General American; override per session.
-DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
-
 
 def steady_state_index(
     dims: NDArray[np.double],
@@ -64,7 +61,7 @@ def steady_state_index(
     return int(np.argmin(masked))
 
 
-def _with_bark(token: pl.DataFrame) -> pl.DataFrame | None:
+def _with_bark(token: pl.LazyFrame) -> pl.LazyFrame | None:
     """Bark dims on the smoothed formant track; None if the token has no F0.
 
     Z0 is held at the token's mean finite F0 across every frame rather than
@@ -75,11 +72,11 @@ def _with_bark(token: pl.DataFrame) -> pl.DataFrame | None:
     exactly what steady-state selection minimizes. Anchoring also subsumes the
     NaN-F0 fill, since unvoiced frames inherit the same reference.
     """
-    f0: NDArray[np.double] = token["F0"].to_numpy()
+    f0: NDArray[np.double] = token.select("F0").collect().to_numpy()
     finite: NDArray[np.double] = f0[~np.isnan(f0)]
     if finite.size == 0:
         return None
-    anchored: pl.DataFrame = token.with_columns(
+    anchored: pl.LazyFrame = token.with_columns(
         pl.lit(float(finite.mean())).alias("F0")
     )
     return add_bark_dims(anchored, formant_cols=("F1_s", "F2_s", "F3_s"))
@@ -97,18 +94,18 @@ def _zscore_velocity_index(
     return steady_state_index(dims, rel_time, lo, hi)
 
 
-def token_displacement(token: pl.DataFrame) -> float:
+def token_displacement(token: pl.LazyFrame) -> float:
     """Onset->offset spectral displacement in Bark for one token.
 
     Returns NaN when the token has no finite F0 (cannot be Bark-normalized).
     """
     token = token.sort("rel_time")
-    barked: pl.DataFrame | None = _with_bark(token)
+    barked: pl.LazyFrame | None = _with_bark(token)
     if barked is None:
         return float("nan")
-    rel: NDArray[np.double] = token["rel_time"].to_numpy()
+    rel: NDArray[np.double] = token.select("rel_time").collect().to_numpy()
     dims: NDArray[np.double] = np.column_stack(
-        [barked[d].to_numpy() for d in _BARK_DIMS]
+        [barked.select(d).collect().to_numpy() for d in _BARK_DIMS]
     )
     onset: int = steady_state_index(dims, rel, *_ONSET_WINDOW)
     offset: int = steady_state_index(dims, rel, *_OFFSET_WINDOW)
@@ -119,17 +116,18 @@ _DISYLLABIC_HALF_WINDOW = 0.15
 
 
 def _point(
-    token: pl.DataFrame, label: str, set_name: str, word: str, lo: float, hi: float
+    token: pl.LazyFrame, label: str, set_name: str, word: str, lo: float, hi: float
 ) -> dict[str, np.double | str]:
-    rel: NDArray[np.double] = token["rel_time"].to_numpy()
-    f1: NDArray[np.double] = token["F1_s"].to_numpy()
-    f2: NDArray[np.double] = token["F2_s"].to_numpy()
-    f3: NDArray[np.double] = token["F3_s"].to_numpy()
-    f0: NDArray[np.double] = token["F0"].to_numpy()
-    barked: pl.DataFrame | None = _with_bark(token)
+    actual: pl.DataFrame = token.collect()
+    rel: NDArray[np.double] = actual.select("rel_time").to_numpy()
+    f1: NDArray[np.double] = actual.select("F1_s").to_numpy()
+    f2: NDArray[np.double] = actual.select("F2_s").to_numpy()
+    f3: NDArray[np.double] = actual.select("F3_s").to_numpy()
+    f0: NDArray[np.double] = actual.select("F0").to_numpy()
+    barked: pl.LazyFrame | None = _with_bark(token)
     if barked is not None:
         dims: NDArray[np.double] = np.column_stack(
-            [barked[d].to_numpy() for d in _BARK_DIMS]
+            [barked.select(d).collect().to_numpy() for d in _BARK_DIMS]
         )
         idx: int = steady_state_index(dims, rel, lo, hi)
     else:
@@ -150,7 +148,7 @@ def _point(
 
 
 def collapse_token(
-    token: pl.DataFrame, label: str, is_diphthong: bool
+    token: pl.LazyFrame, label: str, is_diphthong: bool
 ) -> list[dict[str, np.double | str]]:
     token = token.sort("rel_time")
     normalized, _ = normalize_label(label)
@@ -169,15 +167,13 @@ def collapse_token(
     return [_point(token, label, set_name, word, *_MONO_WINDOW)]
 
 
-_POINT_COLUMNS = ["label", "set", "word", "F0", "F1", "F2", "F3"]
+_POINT_COLUMNS: list[str] = ["label", "set", "word", "F0", "F1", "F2", "F3"]
 
 
-def points_from_trajectory(
-    traj: pl.DataFrame, dialect: Dialect = DEFAULT_DIALECT
-) -> pl.DataFrame:
+def points_from_trajectory(traj: pl.LazyFrame, dialect: Dialect) -> pl.LazyFrame:
     classification: dict[str, bool] = classify_sets(traj, dialect)
     rows: list[dict[str, np.double | str]] = []
-    for (_token_id,), token in traj.group_by("token_id", maintain_order=True):
+    for (_token_id,), token in traj.collect().group_by("token_id", maintain_order=True):
         label: str = token["label"][0]
         normalized, _ = normalize_label(label)
         set_name: str = get_set_name(normalized)
@@ -185,8 +181,8 @@ def points_from_trajectory(
         is_diph: bool = classification.get(
             set_name, set_name in dialect.profile.diphthongs
         )
-        rows.extend(collapse_token(token, label, is_diph))
-    return pl.DataFrame(
+        rows.extend(collapse_token(pl.LazyFrame(token), label, is_diph))
+    return pl.LazyFrame(
         rows,
         schema={
             c: (pl.Utf8 if c in ("label", "set", "word") else pl.Float64)
@@ -195,26 +191,26 @@ def points_from_trajectory(
     )
 
 
-def load_points(session: str, dialect: Dialect = DEFAULT_DIALECT) -> pl.DataFrame:
-    traj: pl.DataFrame = pl.read_parquet(
+def load_points(session: str, dialect: Dialect) -> pl.LazyFrame:
+    traj: pl.LazyFrame = pl.scan_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
     return points_from_trajectory(traj, dialect)
 
 
 def _score_sets(
-    traj: pl.DataFrame,
+    traj: pl.LazyFrame,
 ) -> tuple[dict[str, float], dict[str, int], dict[str, bool]]:
     scores: dict[str, list[float]] = {}
     counts: dict[str, int] = {}
     disyll: dict[str, bool] = {}
-    for (_token_id,), token in traj.group_by("token_id", maintain_order=True):
+    for (_token_id,), token in traj.collect().group_by("token_id", maintain_order=True):
         label: str = token["label"][0]
         normalized, is_dis = normalize_label(label)
         set_name: str = get_set_name(normalized)
         counts[set_name] = counts.get(set_name, 0) + 1
         disyll[set_name] = disyll.get(set_name, False) or is_dis
-        disp: float = token_displacement(token)
+        disp: float = token_displacement(pl.LazyFrame(token))
         if not math.isnan(disp):
             scores.setdefault(set_name, []).append(disp)
     set_score: dict[str, float] = {
@@ -277,25 +273,21 @@ def _decide(
     return set_name in profile.diphthongs
 
 
-def classify_sets(
-    traj: pl.DataFrame, dialect: Dialect = DEFAULT_DIALECT
-) -> dict[str, bool]:
+def classify_sets(traj: pl.LazyFrame, dialect: Dialect) -> dict[str, bool]:
     profile: DialectProfile = dialect.profile
     set_score, _counts, disyll = _score_sets(traj)
     q3, iqr = _baseline(set_score, disyll, profile)
     return {s: _decide(s, sc, q3, iqr, disyll, profile) for s, sc in set_score.items()}
 
 
-def baseline_bars(
-    session: str, dialect: Dialect = DEFAULT_DIALECT
-) -> tuple[float, float, float, float]:
+def baseline_bars(session: str, dialect: Dialect) -> tuple[float, float, float, float]:
     """The session's monophthong baseline and the two decision bars.
 
     Returns (q3, iqr, mono_bar, diph_bar), all in Bark. A set scoring below
     mono_bar is a monophthong, above diph_bar a diphthong; in between the
     dialect's expectation wins.
     """
-    traj: pl.DataFrame = pl.read_parquet(
+    traj: pl.LazyFrame = pl.scan_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
     set_score, _counts, disyll = _score_sets(traj)
@@ -303,9 +295,9 @@ def baseline_bars(
     return q3, iqr, q3, q3 + _FAR_FENCE * iqr
 
 
-def diphthong_report(session: str, dialect: Dialect = DEFAULT_DIALECT) -> pl.DataFrame:
+def diphthong_report(session: str, dialect: Dialect) -> pl.DataFrame:
     profile: DialectProfile = dialect.profile
-    traj: pl.DataFrame = pl.read_parquet(
+    traj: pl.LazyFrame = pl.scan_parquet(
         session_dir(session) / f"{session}_formants.parquet"
     )
     set_score, counts, disyll = _score_sets(traj)

@@ -1,4 +1,4 @@
-from vowels.schema import COLORS, Dialect, Wells
+from vowels.schema import COLORS, Dialect, DialectProfile, Wells
 
 # A length mark is not a second vowel quality, and a trailing rhotic is
 # r-colouring rather than a glide. Strip both and a genuine diphthong is what
@@ -34,28 +34,33 @@ def test_every_dialect_covers_every_set() -> None:
 def test_declared_diphthongs_match_the_transcriptions() -> None:
     # Guards the prior against drifting away from the IPA table it describes.
     for dialect in Dialect:
-        profile = dialect.profile
-        derived = {w for w, ipa in profile.expected.items() if len(_nucleus(ipa)) > 1}
+        profile: DialectProfile = dialect.profile
+        derived: set[Wells] = {
+            w for w, ipa in profile.expected.items() if len(_nucleus(ipa)) > 1
+        }
         assert derived == set(profile.diphthongs), dialect
 
 
 def test_declared_r_colored_match_the_transcriptions() -> None:
     for dialect in Dialect:
-        profile = dialect.profile
-        derived = {w for w, ipa in profile.expected.items() if ipa.endswith("r")}
+        profile: DialectProfile = dialect.profile
+        derived: set[Wells] = {
+            w for w, ipa in profile.expected.items() if ipa.endswith("r")
+        }
         assert derived == set(profile.r_colored), dialect
 
 
 def test_rhoticity_agrees_with_the_transcriptions() -> None:
     for dialect in Dialect:
-        profile = dialect.profile
-        has_rhotics = any(ipa.endswith("r") for ipa in profile.expected.values())
+        profile: DialectProfile = dialect.profile
+        has_rhotics: bool = any(ipa.endswith("r") for ipa in profile.expected.values())
         assert profile.rhotic is has_rhotics, dialect
 
 
 def test_rp_keeps_centring_diphthongs_that_ga_treats_as_rhotic() -> None:
-    rp, ga = Dialect.RP.profile, Dialect.GA.profile
-    centring = {Wells.NEAR, Wells.SQUARE, Wells.CURE}
+    rp: DialectProfile = Dialect.RP.profile
+    ga: DialectProfile = Dialect.GA.profile
+    centring: set[Wells] = {Wells.NEAR, Wells.SQUARE, Wells.CURE}
     assert centring <= rp.diphthongs
     assert centring.isdisjoint(ga.diphthongs)
     assert centring <= ga.r_colored

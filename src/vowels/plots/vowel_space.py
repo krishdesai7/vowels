@@ -21,7 +21,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
     is_diph: pl.Expr = pl.col("label").str.contains(":")
     mono_lf: pl.LazyFrame = lf.filter(~is_diph)
     diph_lf: pl.LazyFrame = lf.filter(is_diph)
-    has_diph: bool = True
+    has_diph: bool = not diph_lf.limit(1).collect().is_empty()
 
     all_sets: list[str] = sorted(lf.select("set").unique().collect()["set"].to_list())
     color_scale: alt.Scale = alt.Scale(
@@ -68,7 +68,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
     # Layer 2: Confidence ellipses (monophthongs only)
     ellipse_records: list[dict] = []
     for s in sorted(mono_lf.select("set").unique().collect()["set"].to_list()):
-        subset: pl.DataFrame = mono_lf.filter("set" == s).collect()
+        subset: pl.DataFrame = mono_lf.filter(pl.col("set") == s).collect()
         if subset.height < 3:
             continue
         pts: list[dict] | None = precompute_ellipse(
@@ -100,7 +100,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 3: Monophthong tokens
     layers.append(
-        alt.Chart(mono_lf)
+        alt.Chart(mono_lf.collect())
         .mark_circle(size=60, stroke="white", strokeWidth=0.5)
         .encode(
             x=alt.X("F2:Q", scale=alt.Scale(reverse=True), title="F2 (Hz)"),
@@ -123,7 +123,9 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
     # Layer 4: Per-set means (monophthongs only)
     layers.append(
-        alt.Chart(mono_lf.group_by("set").agg(pl.col.F1.mean(), pl.col.F2.mean()))
+        alt.Chart(
+            mono_lf.group_by("set").agg(pl.col.F1.mean(), pl.col.F2.mean()).collect()
+        )
         .mark_point(
             shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
         )
@@ -161,8 +163,14 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         # Axis spans for normalising arrowhead angles into screen space.
         # x=F2 reversed → screen moves left as F2 rises; y=F1 reversed → same.
         # Chart pixel dims (650×550) are folded in so angles are visually correct.
-        F2_rng: float = (mono_lf["F2"].max() - mono_lf["F2"].min()) or 1.0  # type: ignore
-        F1_rng: float = (mono_lf["F1"].max() - mono_lf["F1"].min()) or 1.0  # type: ignore
+        f2_min, f2_max, f1_min, f1_max = mono_lf.select(
+            pl.col("F2").min().alias("f2_min"),
+            pl.col("F2").max().alias("f2_max"),
+            pl.col("F1").min().alias("f1_min"),
+            pl.col("F1").max().alias("f1_max"),
+        ).collect().row(0)
+        F2_rng: float = (f2_max - f2_min) or 1.0
+        F1_rng: float = (f1_max - f1_min) or 1.0
         W, H = 650.0, 550.0
 
         def _angle_expr() -> pl.Expr:
@@ -176,11 +184,11 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
             )
 
         pt1_t: pl.LazyFrame = (
-            diph_lf.filter("point_num" == 1)
+            diph_lf.filter(pl.col("point_num") == 1)
             .select("token", "set", "F1", "F2")
             .rename({"F1": "F1_s", "F2": "F2_s"})
         )
-        pt2_t: pl.LazyFrame = diph_lf.filter("point_num" == 2).select(
+        pt2_t: pl.LazyFrame = diph_lf.filter(pl.col("point_num") == 2).select(
             "token", "set", "F1", "F2", "word"
         )
         tok_arr: pl.LazyFrame = pt2_t.join(pt1_t, on=["token", "set"]).with_columns(
@@ -188,11 +196,11 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
 
         pt1_m: pl.LazyFrame = (
-            diph_means_lf.filter("point_num" == 1)
+            diph_means_lf.filter(pl.col("point_num") == 1)
             .select(["set", "F1", "F2"])
             .rename({"F1": "F1_s", "F2": "F2_s"})
         )
-        pt2_m: pl.LazyFrame = diph_means_lf.filter("point_num" == 2).select(
+        pt2_m: pl.LazyFrame = diph_means_lf.filter(pl.col("point_num") == 2).select(
             ["set", "F1", "F2"]
         )
         mean_arr: pl.LazyFrame = pt2_m.join(pt1_m, on="set").with_columns(_angle_expr())
@@ -201,7 +209,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
         # Token lines
         layers.append(
-            alt.Chart(diph_lf)
+            alt.Chart(diph_lf.collect())
             .mark_line(strokeWidth=1.5)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -216,7 +224,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Start dots at point 1
         layers.append(
-            alt.Chart(diph_lf.filter("point_num" == 1))
+            alt.Chart(diph_lf.filter(pl.col("point_num") == 1).collect())
             .mark_point(shape="circle", size=25, filled=True)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -229,7 +237,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Arrowhead triangles at point 2
         layers.append(
-            alt.Chart(tok_arr)
+            alt.Chart(tok_arr.collect())
             .mark_point(shape="triangle", size=60, filled=True)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -249,7 +257,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Mean line
         layers.append(
-            alt.Chart(diph_means_lf)
+            alt.Chart(diph_means_lf.collect())
             .mark_line(strokeWidth=5)
             .encode(
                 x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
@@ -264,7 +272,7 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         )
         # Mean arrowhead at point 2
         layers.append(
-            alt.Chart(mean_arr)
+            alt.Chart(mean_arr.collect())
             .mark_point(
                 shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5
             )
@@ -439,11 +447,12 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
 
 def save_chart(session: str, dialect: Dialect) -> None:
     lf: pl.LazyFrame = load_points(session, dialect)
+    has_diph: bool = lf.select("label").collect()["label"].str.contains(":").any()
     all_sets: list[str] = sorted(lf.select("set").unique().collect()["set"].to_list())
     set_colors: dict[str, str] = {s: Wells[s].color for s in all_sets}
 
     out_path: Path = session_dir(session) / f"{session}_vowel_space.html"
     html: str = build_chart(lf, session).to_html()
-    html = _inject_controls(html, has_diph=True, set_colors=set_colors)
+    html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
     print(f"Created {out_path}")

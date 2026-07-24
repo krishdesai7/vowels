@@ -46,8 +46,12 @@ def test_no_null_set_or_word_for_standard_labels() -> None:
         "PRICE_try:1",
     ]
     df: pl.LazyFrame = _make_lf(labels)
-    actual: tuple[int, int] = df.select("set", "word").unique().collect().row(0)
-    assert actual == (0, 0)
+    null_counts: tuple[int, int] = (
+        df.select(pl.col("set").is_null().sum(), pl.col("word").is_null().sum())
+        .collect()
+        .row(0)
+    )
+    assert null_counts == (0, 0)
 
 
 def test_time_and_formant_columns_preserved() -> None:
@@ -291,11 +295,11 @@ def test_extract_formants_orchestration(
         "max_formant",
         "error",
     }
-    assert EXPECTED_COLS.issubset(set(out.columns))
+    assert EXPECTED_COLS.issubset(set(out.collect_schema().names()))
 
     # Silent interval was skipped -> exactly 2 unique token_ids
-    actual: pl.DataFrame = out.select("token_id", "set").collect()
-    assert actual.unique().height == 2
+    actual: pl.DataFrame = out.select("token_id", "set", "is_diphthong").collect()
+    assert actual.select("token_id", "set").unique().height == 2
 
     fleece: pl.DataFrame = actual.filter(pl.col("set") == "FLEECE")
     price: pl.DataFrame = actual.filter(pl.col("set") == "PRICE")

@@ -72,7 +72,7 @@ def _with_bark(token: pl.LazyFrame) -> pl.LazyFrame | None:
     exactly what steady-state selection minimizes. Anchoring also subsumes the
     NaN-F0 fill, since unvoiced frames inherit the same reference.
     """
-    f0: NDArray[np.double] = token.select("F0").collect().to_numpy()
+    f0: NDArray[np.double] = token.select("F0").collect().to_series().to_numpy()
     finite: NDArray[np.double] = f0[~np.isnan(f0)]
     if finite.size == 0:
         return None
@@ -103,9 +103,9 @@ def token_displacement(token: pl.LazyFrame) -> float:
     barked: pl.LazyFrame | None = _with_bark(token)
     if barked is None:
         return float("nan")
-    rel: NDArray[np.double] = token.select("rel_time").collect().to_numpy()
+    rel: NDArray[np.double] = token.select("rel_time").collect().to_series().to_numpy()
     dims: NDArray[np.double] = np.column_stack(
-        [barked.select(d).collect().to_numpy() for d in _BARK_DIMS]
+        [barked.select(d).collect().to_series().to_numpy() for d in _BARK_DIMS]
     )
     onset: int = steady_state_index(dims, rel, *_ONSET_WINDOW)
     offset: int = steady_state_index(dims, rel, *_OFFSET_WINDOW)
@@ -119,15 +119,15 @@ def _point(
     token: pl.LazyFrame, label: str, set_name: str, word: str, lo: float, hi: float
 ) -> dict[str, np.double | str]:
     actual: pl.DataFrame = token.collect()
-    rel: NDArray[np.double] = actual.select("rel_time").to_numpy()
-    f1: NDArray[np.double] = actual.select("F1_s").to_numpy()
-    f2: NDArray[np.double] = actual.select("F2_s").to_numpy()
-    f3: NDArray[np.double] = actual.select("F3_s").to_numpy()
-    f0: NDArray[np.double] = actual.select("F0").to_numpy()
+    rel: NDArray[np.double] = actual["rel_time"].to_numpy()
+    f1: NDArray[np.double] = actual["F1_s"].to_numpy()
+    f2: NDArray[np.double] = actual["F2_s"].to_numpy()
+    f3: NDArray[np.double] = actual["F3_s"].to_numpy()
+    f0: NDArray[np.double] = actual["F0"].to_numpy()
     barked: pl.LazyFrame | None = _with_bark(token)
     if barked is not None:
         dims: NDArray[np.double] = np.column_stack(
-            [barked.select(d).collect().to_numpy() for d in _BARK_DIMS]
+            [barked.select(d).collect().to_series().to_numpy() for d in _BARK_DIMS]
         )
         idx: int = steady_state_index(dims, rel, lo, hi)
     else:

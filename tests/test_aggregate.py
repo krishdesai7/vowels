@@ -155,7 +155,7 @@ def test_all_nan_f0_still_yields_a_point() -> None:
 def test_points_from_trajectory_classifies_then_collapses() -> None:
     n: int = 11
 
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [
             _token(0, "KIT_bit", 400, 2000),
             _token(1, "DRESS_bed", 550, 1900),
@@ -163,9 +163,17 @@ def test_points_from_trajectory_classifies_then_collapses() -> None:
             _token(3, "LOT_cot", 650, 1100),
             _token(4, "PRICE_buy", 700, np.linspace(1000, 2400, n)),  # moves -> diph
         ]
-    )
+    ).lazy()
     points: pl.LazyFrame = points_from_trajectory(traj, dialect=DEFAULT_DIALECT)
-    assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
+    assert set(points.collect_schema().names()) == {
+        "label",
+        "set",
+        "word",
+        "F0",
+        "F1",
+        "F2",
+        "F3",
+    }
     labels: dict[str, pl.Series] = points.select("label").collect().to_dict()
     assert "PRICE_buy:1" in labels["label"] and "PRICE_buy:2" in labels["label"]
     assert "TRAP_cat" in labels["label"] and "TRAP_cat:1" not in labels["label"]
@@ -236,42 +244,42 @@ def _baseline_tokens() -> list[pl.DataFrame]:
 def test_classify_flips_flat_canonical_diphthong_to_mono() -> None:
     # A canonical diphthong sitting inside the monophthong body flips; one that
     # sweeps far past the fence keeps its diphthong label.
-    traj = pl.LazyFrame(
+    traj = pl.concat(
         [*_baseline_tokens(), _token(4, "GOAT_goat", 500, 1200)]
-    )  # flat -> mono
+    ).lazy()  # flat -> mono
     result: dict[str, bool] = classify_sets(traj, dialect=DEFAULT_DIALECT)
     assert result["GOAT"] is False
     assert result["KIT"] is False
 
-    traj = pl.LazyFrame(
+    traj = pl.concat(
         [*_baseline_tokens(), _token(4, "PRICE_buy", 700, np.linspace(1000, 2400, 11))]
-    )
+    ).lazy()
     assert classify_sets(traj, dialect=DEFAULT_DIALECT)["PRICE"] is True
 
 
 def test_classify_keeps_borderline_at_prior() -> None:
     # MOUTH moves more than the monophthong body (above Q3) but does not clear
     # the far-outlier fence, so the dialect's expectation decides it.
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [*_baseline_tokens(), _token(4, "MOUTH_out", 600, np.linspace(1400, 1900, 11))]
-    )
+    ).lazy()
     assert classify_sets(traj, dialect=DEFAULT_DIALECT)["MOUTH"] is True
 
 
 def test_classify_needs_strong_evidence_to_promote_a_monophthong() -> None:
     # The same borderline movement on a canonically monophthongal set is NOT
     # enough to promote it: only the far fence can override that prior.
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [
             *_baseline_tokens(),
             _token(4, "FLEECE_bead", 350, np.linspace(1400, 1900, 11)),
         ]
-    )
+    ).lazy()
     assert classify_sets(traj, dialect=DEFAULT_DIALECT)["FLEECE"] is False
 
 
 def test_classify_flips_moving_canonical_mono_to_diph() -> None:
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [
             _token(0, "KIT_bit", 400, 2000),
             _token(1, "DRESS_bed", 550, 1900),
@@ -281,13 +289,13 @@ def test_classify_flips_moving_canonical_mono_to_diph() -> None:
                 4, "FLEECE_bead", 350, np.linspace(900, 2600, 11)
             ),  # strong sweep -> diph
         ]
-    )
+    ).lazy()
     result: dict[str, bool] = classify_sets(traj, dialect=DEFAULT_DIALECT)
     assert result["FLEECE"] is True
 
 
 def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [
             _token(0, "KIT_bit", 400, 2000),
             _token(1, "DRESS_bed", 550, 1900),
@@ -295,7 +303,7 @@ def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
             _token(3, "LOT_cot", 650, 1100),
             _token(4, "GOAT_goat", 500, 1200),  # flat canonical diphthong -> flips
         ]
-    )
+    ).lazy()
     d: Path = tmp_path / "sX"
     d.mkdir()
     traj.sink_parquet(d / "sX_formants.parquet")
@@ -312,7 +320,7 @@ def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
 
 
 def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
-    traj: pl.LazyFrame = pl.LazyFrame(
+    traj: pl.LazyFrame = pl.concat(
         [
             _token(0, "KIT_bit", 400, 2000),
             _token(1, "DRESS_bed", 550, 1900),
@@ -320,7 +328,7 @@ def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
             _token(3, "LOT_cot", 650, 1100),
             _token(4, "GOAT_goat", 500, 1200),
         ]
-    )
+    ).lazy()
     d: Path = tmp_path / "sX"
     d.mkdir()
     traj.sink_parquet(d / "sX_formants.parquet")

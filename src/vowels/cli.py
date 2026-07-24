@@ -1,9 +1,10 @@
-from typing import Annotated, Final
+from typing import Annotated
 
 import polars as pl
 import typer
 
 from . import (
+    DEFAULT_DIALECT,
     Dialect,
     Gender,
     baseline_bars,
@@ -24,8 +25,6 @@ type DialectOption = Annotated[
         "--dialect", "-d", help="Speaker dialect (GA/RP)", case_sensitive=False
     ),
 ]
-
-DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
 
 
 @app.command()

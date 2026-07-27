@@ -10,7 +10,7 @@ def project_root() -> Path:
     raise RuntimeError("Cannot find project root: no pyproject.toml found")
 
 
-session_dir: Callable[[str], Path] = lambda session: (  # noqa: E731
+session_dir: Callable[[str], Path] = lambda session: (
     project_root() / "sessions" / session
 )
 

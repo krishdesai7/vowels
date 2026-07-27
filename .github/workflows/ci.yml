@@ -22,14 +22,5 @@ jobs:
       - name: Install the project
         run: uv sync --frozen
 
-      - name: Format
-        run: uv format --check
-
-      - name: Lint
-        run: uv run ruff check
-
-      - name: Typecheck
-        run: uv run pyrefly check
-
-      - name: Test
-        run: uv run pytest -q
+      - name: Run immutable checks
+        run: uv run just i

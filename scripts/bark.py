@@ -97,8 +97,8 @@ def main(
     output_file: Path = resolve_output_file(output, input_file, save_all)
     frame: pl.LazyFrame = (
         scan(input_file)
-        .with_columns(formant_midpoints(i) for i in range(0, 4))
-        .with_columns(bark_normalize(i) for i in range(0, 4))
+        .with_columns(formant_midpoints(i) for i in range(4))
+        .with_columns(bark_normalize(i) for i in range(4))
         .with_columns(
             Openness=pl.col.Z1 - pl.col.Z0,
             Frontness=pl.col.Z2 - pl.col.Z1,

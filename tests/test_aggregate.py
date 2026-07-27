@@ -1,55 +1,80 @@
+import math
+from collections.abc import Sequence
+from pathlib import Path
+from typing import cast
+
 import numpy as np
 import polars as pl
 import pytest
+from numpy.typing import NDArray
 
-from vowels.aggregate import collapse_token, points_from_trajectory, steady_state_index
+from vowels import DEFAULT_DIALECT, aggregate
+from vowels.aggregate import (
+    baseline_bars,
+    classify_sets,
+    collapse_token,
+    diphthong_report,
+    points_from_trajectory,
+    steady_state_index,
+    token_displacement,
+)
 
 
 def test_picks_flat_region_in_center() -> None:
-    # Moving edges, flat plateau in the middle -> min velocity in the plateau.
-    rel = np.linspace(0.0, 1.0, 11)
-    f1 = np.array([300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800], float)
-    f2 = np.array([2000] * 11, float)
-    idx = steady_state_index(f1, f2, rel, 0.2, 0.8)
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    d: NDArray[np.double] = np.array(
+        [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800], float
+    )
+    idx: int = steady_state_index(d.reshape(-1, 1), rel, 0.2, 0.8)
     assert 0.2 <= rel[idx] <= 0.8
-    # plateau frames have zero velocity; chosen frame must be on the plateau
-    assert f1[idx] == 500
+    assert d[idx] == 500
 
 
 def test_window_restricts_search() -> None:
-    # Flat everywhere except a dip near the start that is outside [0.55, 0.9].
-    rel = np.linspace(0.0, 1.0, 11)
-    f1 = np.array([500, 480, 500, 500, 500, 500, 500, 500, 500, 500, 500], float)
-    f2 = np.array([2000] * 11, float)
-    idx = steady_state_index(f1, f2, rel, 0.55, 0.9)
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    d: NDArray[np.double] = np.array(
+        [500, 480, 500, 500, 500, 500, 500, 500, 500, 500, 500], float
+    )
+    idx: int = steady_state_index(d.reshape(-1, 1), rel, 0.55, 0.9)
     assert 0.55 <= rel[idx] <= 0.9
 
 
-def test_normalization_balances_f1_f2() -> None:
-    # F2 swings by a large Hz amount, F1 by a small one, but equal in z-units.
-    # Without normalization the F2 frame would dominate; with it, the flat
-    # frames (zero velocity) win. Assert the F2 jump is NOT selected and that a
-    # genuinely flat frame is chosen.
-    rel = np.linspace(0.0, 1.0, 5)
-    f1 = np.array([500, 500, 500, 510, 500], float)
-    f2 = np.array([1500, 1500, 1500, 1500, 2500], float)
-    idx = steady_state_index(f1, f2, rel, 0.0, 1.0)
-    assert idx != 4  # the big raw-Hz F2 jump must not automatically win
-    assert f1[idx] == 500.0  # a flat frame, not the F1 nudge at frame 3
+def test_velocity_uses_all_bark_axes() -> None:
+    # Axis 0 alone is slowest at frame 4, so ignoring axis 1 would select it.
+    # Axis 1 jumps there, making frame 4 the fastest overall. Selecting frame 1
+    # therefore proves both axes contribute to the velocity norm.
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 5)
+    axis0: NDArray[np.double] = np.array(
+        [0.0, 1.0, 3.0, 6.0, 6.0]
+    )  # per-frame steps 1, 2, 3, 0
+    axis1: NDArray[np.double] = np.array(
+        [0.0, 0.0, 0.0, 0.0, 5.0]
+    )  # jump on the last frame
+    dims: NDArray[np.double] = np.column_stack([axis0, axis1])
+    assert steady_state_index(axis0.reshape(-1, 1), rel, 0.0, 1.0) == 4
+    assert steady_state_index(dims, rel, 0.0, 1.0) == 1
 
 
 def test_empty_window_falls_back_to_all_frames() -> None:
-    rel = np.linspace(0.0, 1.0, 5)
-    f1 = np.array([500.0, 500.0, 490.0, 500.0, 500.0], float)
-    f2 = np.array([1500.0] * 5, float)
-    # Window [1.5, 2.0] contains no frames -> fallback searches all frames
-    idx = steady_state_index(f1, f2, rel, 1.5, 2.0)
-    assert 0 <= idx <= 4  # returned a valid index, did not raise
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 5)
+    d: NDArray[np.double] = np.array([500.0, 500.0, 490.0, 500.0, 500.0], float)
+    idx: int = steady_state_index(d.reshape(-1, 1), rel, 1.5, 2.0)
+    assert 0 <= idx <= 4
 
 
-def _frames(rel, f1, f2, f3=None, f0=None) -> pl.DataFrame:
-    n = len(rel)
-    return pl.DataFrame(
+"""A frame-wise numeric column: a Python sequence or a numpy array."""
+type Nums = Sequence[float] | NDArray[np.double]
+
+
+def _frames(
+    rel: Nums,
+    f1: Nums,
+    f2: Nums,
+    f3: Nums | None = None,
+    f0: Nums | None = None,
+) -> pl.LazyFrame:
+    n: int = len(rel)
+    return pl.LazyFrame(
         {
             "rel_time": list(rel),
             "F0": list(f0) if f0 is not None else [120.0] * n,
@@ -61,10 +86,13 @@ def _frames(rel, f1, f2, f3=None, f0=None) -> pl.DataFrame:
 
 
 def test_monophthong_yields_one_point() -> None:
-    rel = np.linspace(0.0, 1.0, 11)
-    df = _frames(rel, [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800],
-                 [2000] * 11)
-    rows = collapse_token(df, "TRAP_cat")
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    lf: pl.LazyFrame = _frames(
+        rel, [300, 400, 500, 500, 500, 500, 500, 500, 600, 700, 800], [2000] * 11
+    )
+    rows: list[dict[str, np.double | str]] = collapse_token(
+        lf, "TRAP_cat", is_diphthong=False
+    )
     assert len(rows) == 1
     assert rows[0]["label"] == "TRAP_cat"
     assert rows[0]["set"] == "TRAP"
@@ -73,52 +101,242 @@ def test_monophthong_yields_one_point() -> None:
 
 
 def test_diphthong_yields_two_suffixed_points() -> None:
-    rel = np.linspace(0.0, 1.0, 11)
-    df = _frames(rel, [400] * 11, [2200] * 11)
-    rows = collapse_token(df, "PRICE_buy")
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    lf: pl.LazyFrame = _frames(rel, [400] * 11, [2200] * 11)
+    rows: list[dict[str, np.double | str]] = collapse_token(
+        lf, "PRICE_buy", is_diphthong=True
+    )
     assert [r["label"] for r in rows] == ["PRICE_buy:1", "PRICE_buy:2"]
     assert all(r["set"] == "PRICE" for r in rows)
 
 
 def test_disyllabic_targets_second_syllable_window() -> None:
-    rel = np.linspace(0.0, 1.0, 21)
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 21)
     # Flat plateau only in the second-syllable window region (~0.83).
     f1 = np.array([500.0] * 21)
     f1[:14] += np.linspace(0, 60, 14)  # earlier frames vary
-    df = _frames(rel, f1, [1600] * 21)
-    rows = collapse_token(df, "2leTTER_butter")
+    lf: pl.LazyFrame = _frames(rel, f1, [1600] * 21)
+    rows: list[dict[str, np.double | str]] = collapse_token(
+        lf, "2leTTER_butter", is_diphthong=False
+    )
     assert len(rows) == 1
     assert rows[0]["set"] == "leTTER"
     assert rows[0]["word"] == "butter"
 
 
 def test_nan_f0_falls_back_to_token_mean() -> None:
-    rel = np.linspace(0.0, 1.0, 5)
-    f0 = [110.0, float("nan"), 130.0, 130.0, 110.0]
-    df = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
-    rows = collapse_token(df, "KIT_bit")
-    # The chosen steady-state frame (index 1) has NaN F0, so the fallback to
-    # the token mean of finite F0 values (110, 130, 130, 110) must fire.
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 5)
+    f0: list[float] = [110.0, float("nan"), 130.0, 130.0, 110.0]
+    lf: pl.LazyFrame = _frames(rel, [500] * 5, [1500] * 5, f0=f0)
+    rows: list[dict[str, np.double | str]] = collapse_token(
+        lf, "KIT_bit", is_diphthong=False
+    )
+    # Formants are flat and Z0 is anchored per token, so every frame has zero
+    # Bark velocity and the first candidate (index 1) wins. Its F0 is NaN, so
+    # the point must fall back to the token mean of 110, 130, 130, 110.
     assert rows[0]["F0"] == pytest.approx(120.0)
 
 
-def test_points_from_trajectory_one_row_per_mono_two_per_diph() -> None:
-    rel = list(np.linspace(0.0, 1.0, 11))
-    def block(token_id, label, f1, f2):
-        return pl.DataFrame({
-            "token_id": [token_id] * 11,
-            "label": [label] * 11,
+def test_all_nan_f0_still_yields_a_point() -> None:
+    # A wholly unvoiced token (seen in real data) has no F0 to anchor Bark to,
+    # so _with_bark returns None and selection falls back to z-scored Hz. The
+    # token must still produce a usable point rather than blowing up.
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 5)
+    f1: NDArray[np.double] = np.array([500.0, 500.0, 700.0, 500.0, 500.0])
+    lf: pl.LazyFrame = _frames(rel, f1, [1500] * 5, f0=[float("nan")] * 5)
+    rows: list[dict[str, np.double | str]] = collapse_token(
+        lf, "KIT_bit", is_diphthong=False
+    )
+    assert len(rows) == 1
+    assert math.isnan(cast(float, rows[0]["F0"]))
+    assert rows[0]["F1"] in (500.0, 700.0)
+
+
+def test_points_from_trajectory_classifies_then_collapses() -> None:
+    n: int = 11
+
+    traj: pl.LazyFrame = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "PRICE_buy", 700, np.linspace(1000, 2400, n)),  # moves -> diph
+        ]
+    ).lazy()
+    points: pl.LazyFrame = points_from_trajectory(traj, dialect=DEFAULT_DIALECT)
+    assert set(points.collect_schema().names()) == {
+        "label",
+        "set",
+        "word",
+        "F0",
+        "F1",
+        "F2",
+        "F3",
+    }
+    labels: dict[str, pl.Series] = points.select("label").collect().to_dict()
+    assert "PRICE_buy:1" in labels["label"] and "PRICE_buy:2" in labels["label"]
+    assert "TRAP_cat" in labels["label"] and "TRAP_cat:1" not in labels["label"]
+
+
+def test_displacement_small_for_monophthong() -> None:
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    # Flat F1/F2/F3 -> onset and offset targets coincide -> ~0 displacement.
+    lf: pl.LazyFrame = _frames(rel, [500.0] * 11, [1500.0] * 11)
+    assert token_displacement(lf) < 0.2
+
+
+def test_displacement_large_for_diphthong() -> None:
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    # F2 sweeps 900 -> 2300 Hz across the token -> big Frontness change.
+    f2: NDArray[np.double] = np.linspace(900.0, 2300.0, 11)
+    lf: pl.LazyFrame = _frames(rel, [500.0] * 11, list(f2))
+    assert token_displacement(lf) > 1.0
+
+
+def test_displacement_nan_without_f0() -> None:
+    rel: NDArray[np.double] = np.linspace(0.0, 1.0, 11)
+    lf: pl.LazyFrame = _frames(rel, [500.0] * 11, [1500.0] * 11, f0=[float("nan")] * 11)
+    assert np.isnan(token_displacement(lf))
+
+
+def _col(v: float | Nums, n: int) -> list[float]:
+    """Broadcast a scalar to n frames, or pass a per-frame sequence through."""
+    if isinstance(v, (int, float)):
+        return [float(v)] * n
+    return [float(x) for x in v]
+
+
+def _token(
+    token_id: int,
+    label: str,
+    f1: float | Nums,
+    f2: float | Nums,
+    n: int = 11,
+) -> pl.DataFrame:
+    rel: list[float] = list(np.linspace(0.0, 1.0, n))
+    return pl.DataFrame(
+        {
+            "token_id": [token_id] * n,
+            "label": [label] * n,
             "rel_time": rel,
-            "F0": [120.0] * 11,
-            "F1_s": [float(f1)] * 11,
-            "F2_s": [float(f2)] * 11,
-            "F3_s": [2500.0] * 11,
-        })
-    traj = pl.concat([
-        block(0, "TRAP_cat", 700, 1600),
-        block(1, "PRICE_buy", 400, 2200),
-    ])
-    points = points_from_trajectory(traj)
-    assert set(points.columns) == {"label", "set", "word", "F0", "F1", "F2", "F3"}
-    labels = sorted(points["label"].to_list())
-    assert labels == ["PRICE_buy:1", "PRICE_buy:2", "TRAP_cat"]
+            "F0": [120.0] * n,
+            "F1_s": _col(f1, n),
+            "F2_s": _col(f2, n),
+            "F3_s": [2500.0] * n,
+        }
+    )
+
+
+# Monophthong sets carrying a realistic spread of small displacements, so the
+# baseline has a meaningful Q3 and IQR rather than collapsing to zero. These
+# score roughly 0.00 / 0.18 / 0.43 / 0.84 Bark, giving Q3 ~= 0.54, IQR ~= 0.49
+# and therefore a far-outlier fence around 2.0.
+def _baseline_tokens() -> list[pl.DataFrame]:
+    return [
+        _token(0, "KIT_bit", 400, 2000),
+        _token(1, "DRESS_bed", 550, np.linspace(1500, 1600, 11)),
+        _token(2, "TRAP_cat", 700, np.linspace(1500, 1750, 11)),
+        _token(3, "LOT_cot", 650, np.linspace(1400, 1900, 11)),
+    ]
+
+
+def test_classify_flips_flat_canonical_diphthong_to_mono() -> None:
+    # A canonical diphthong sitting inside the monophthong body flips; one that
+    # sweeps far past the fence keeps its diphthong label.
+    traj = pl.concat(
+        [*_baseline_tokens(), _token(4, "GOAT_goat", 500, 1200)]
+    ).lazy()  # flat -> mono
+    result: dict[str, bool] = classify_sets(traj, dialect=DEFAULT_DIALECT)
+    assert result["GOAT"] is False
+    assert result["KIT"] is False
+
+    traj = pl.concat(
+        [*_baseline_tokens(), _token(4, "PRICE_buy", 700, np.linspace(1000, 2400, 11))]
+    ).lazy()
+    assert classify_sets(traj, dialect=DEFAULT_DIALECT)["PRICE"] is True
+
+
+def test_classify_keeps_borderline_at_prior() -> None:
+    # MOUTH moves more than the monophthong body (above Q3) but does not clear
+    # the far-outlier fence, so the dialect's expectation decides it.
+    traj: pl.LazyFrame = pl.concat(
+        [*_baseline_tokens(), _token(4, "MOUTH_out", 600, np.linspace(1400, 1900, 11))]
+    ).lazy()
+    assert classify_sets(traj, dialect=DEFAULT_DIALECT)["MOUTH"] is True
+
+
+def test_classify_needs_strong_evidence_to_promote_a_monophthong() -> None:
+    # The same borderline movement on a canonically monophthongal set is NOT
+    # enough to promote it: only the far fence can override that prior.
+    traj: pl.LazyFrame = pl.concat(
+        [
+            *_baseline_tokens(),
+            _token(4, "FLEECE_bead", 350, np.linspace(1400, 1900, 11)),
+        ]
+    ).lazy()
+    assert classify_sets(traj, dialect=DEFAULT_DIALECT)["FLEECE"] is False
+
+
+def test_classify_flips_moving_canonical_mono_to_diph() -> None:
+    traj: pl.LazyFrame = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(
+                4, "FLEECE_bead", 350, np.linspace(900, 2600, 11)
+            ),  # strong sweep -> diph
+        ]
+    ).lazy()
+    result: dict[str, bool] = classify_sets(traj, dialect=DEFAULT_DIALECT)
+    assert result["FLEECE"] is True
+
+
+def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
+    traj: pl.LazyFrame = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "GOAT_goat", 500, 1200),  # flat canonical diphthong -> flips
+        ]
+    ).lazy()
+    d: Path = tmp_path / "sX"
+    d.mkdir()
+    traj.sink_parquet(d / "sX_formants.parquet")
+    monkeypatch.setattr(aggregate, "session_dir", lambda s: d)
+
+    report: pl.DataFrame = diphthong_report("sX", dialect=DEFAULT_DIALECT)
+    assert set(report.columns) == {"set", "n", "score", "canonical", "final", "flipped"}
+    goat: dict[str, np.double | str] = report.filter(pl.col("set") == "GOAT").row(
+        0, named=True
+    )
+    assert goat["canonical"] == "diphthong"
+    assert goat["final"] == "monophthong"
+    assert goat["flipped"] is True
+
+
+def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
+    traj: pl.LazyFrame = pl.concat(
+        [
+            _token(0, "KIT_bit", 400, 2000),
+            _token(1, "DRESS_bed", 550, 1900),
+            _token(2, "TRAP_cat", 700, 1800),
+            _token(3, "LOT_cot", 650, 1100),
+            _token(4, "GOAT_goat", 500, 1200),
+        ]
+    ).lazy()
+    d: Path = tmp_path / "sX"
+    d.mkdir()
+    traj.sink_parquet(d / "sX_formants.parquet")
+    monkeypatch.setattr(aggregate, "session_dir", lambda s: d)
+
+    q3, iqr, mono_bar, diph_bar = baseline_bars("sX", dialect=DEFAULT_DIALECT)
+    # A set is monophthongal inside the baseline body and diphthongal only
+    # beyond Tukey's far-outlier fence, so the bars straddle the pool.
+    assert mono_bar == pytest.approx(q3)
+    assert diph_bar == pytest.approx(q3 + aggregate._FAR_FENCE * iqr)
+    assert diph_bar > mono_bar

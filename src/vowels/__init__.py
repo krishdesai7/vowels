@@ -1,5 +1,6 @@
 from typing import Final
 
+from .aggregate import baseline_bars, diphthong_report
 from .labels import SECOND_VOWEL_CENTER_RATIO
 from .paths import project_root, session_dir
 from .pipeline import (
@@ -14,21 +15,27 @@ from .plots import (
     save_bark_projections,
     save_chart,
 )
-from .schema import DIPHTHONGS, Gender, Wells
+from .schema import DIPHTHONGS, Dialect, Gender, Wells
+
+DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
 
 __all__: Final[list[str]] = [
+    "DEFAULT_DIALECT",
     "DIPHTHONGS",
+    "SECOND_VOWEL_CENTER_RATIO",
+    "Dialect",
     "Gender",
     "Wells",
-    "project_root",
-    "session_dir",
+    "baseline_bars",
     "detect_silences",
+    "diphthong_report",
     "extract_formants",
-    "parse_labels",
     "label_textgrid",
-    "SECOND_VOWEL_CENTER_RATIO",
+    "parse_labels",
     "precompute_ellipse",
-    "save_chart",
+    "project_root",
     "save_bark_chart",
     "save_bark_projections",
+    "save_chart",
+    "session_dir",
 ]

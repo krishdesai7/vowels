@@ -163,12 +163,16 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
         # Axis spans for normalising arrowhead angles into screen space.
         # x=F2 reversed → screen moves left as F2 rises; y=F1 reversed → same.
         # Chart pixel dims (650×550) are folded in so angles are visually correct.
-        f2_min, f2_max, f1_min, f1_max = mono_lf.select(
-            pl.col("F2").min().alias("f2_min"),
-            pl.col("F2").max().alias("f2_max"),
-            pl.col("F1").min().alias("f1_min"),
-            pl.col("F1").max().alias("f1_max"),
-        ).collect().row(0)
+        f2_min, f2_max, f1_min, f1_max = (
+            mono_lf.select(
+                pl.col("F2").min().alias("f2_min"),
+                pl.col("F2").max().alias("f2_max"),
+                pl.col("F1").min().alias("f1_min"),
+                pl.col("F1").max().alias("f1_max"),
+            )
+            .collect()
+            .row(0)
+        )
         F2_rng: float = (f2_max - f2_min) or 1.0
         F1_rng: float = (f1_max - f1_min) or 1.0
         W, H = 650.0, 550.0

@@ -557,12 +557,16 @@ def _projection_chart(
 
         x_rev: bool = _AXIS_REVERSED[x_col]
         y_rev: bool = _AXIS_REVERSED[y_col]
-        x_min, x_max, y_min, y_max = mono_lf.select(
-            pl.col(x_col).min().alias("x_min"),
-            pl.col(x_col).max().alias("x_max"),
-            pl.col(y_col).min().alias("y_min"),
-            pl.col(y_col).max().alias("y_max"),
-        ).collect().row(0)
+        x_min, x_max, y_min, y_max = (
+            mono_lf.select(
+                pl.col(x_col).min().alias("x_min"),
+                pl.col(x_col).max().alias("x_max"),
+                pl.col(y_col).min().alias("y_min"),
+                pl.col(y_col).max().alias("y_max"),
+            )
+            .collect()
+            .row(0)
+        )
         x_rng: float = (x_max - x_min) or 1.0
         y_rng: float = (y_max - y_min) or 1.0
 

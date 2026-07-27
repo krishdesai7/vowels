@@ -1,0 +1,478 @@
+import parselmouth
+from parselmouth.praat import call
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib
+from matplotlib.patches import Ellipse
+from matplotlib.artist import Artist
+from matplotlib.axes import Axes
+import numpy as np
+import numpy.typing as npt
+import itertools
+from pathlib import Path
+from typing import Literal, Any
+from numbers import Number
+from fire import Fire
+
+def extract_formants(dir: Path, session: str, Gender: Literal['M', 'F', 'C'] = 'M') -> None:
+    wav_path: Path = dir / f"{session}.wav"
+    tg_path: Path = dir / f"{session}_nucleus.TextGrid"
+    tier_name: str = "nucleus"
+    formant_ceiling: int = 5000 if Gender == 'M' else 5500
+    window_length: float = 0.025 if Gender == 'M' else 0.03
+
+    sound: parselmouth.Sound = parselmouth.Sound(str(wav_path))
+    tg: parselmouth.Data = parselmouth.read(str(tg_path))
+
+    n_tiers: int = call(tg, "Get number of tiers")
+    tier_index: int | None = None
+    for i in range(1, n_tiers + 1):
+        if call(tg, "Get tier name", i) == tier_name:
+            tier_index: int = i
+            break
+
+    n_points: int = call(tg, "Get number of points", tier_index)
+    print(f"Found {n_points} vowel nuclei")
+
+    formant_obj: parselmouth.Formant = call(sound, "To Formant (burg)", 0.0, 5, formant_ceiling, window_length, 50)
+    records: list[dict[str, float | str]] = []
+    for i in range(1, n_points + 1):
+        time: float = call(tg, "Get time of point", tier_index, i)
+        label: str = call(tg, "Get label of point", tier_index, i)
+        if not label:
+            continue
+        f1: float = call(formant_obj, "Get value at time", 1, time, "Hertz", "Linear")
+        f2: float = call(formant_obj, "Get value at time", 2, time, "Hertz", "Linear")
+        f3: float = call(formant_obj, "Get value at time", 3, time, "Hertz", "Linear")
+        records.append({"time": time, "label": label, "F1": f1, "F2": f2, "F3": f3})
+
+    df: pd.DataFrame = pd.DataFrame(records)
+    df[["set", "word"]] = df["label"].str.split(pat="_", n=1, expand=True)
+    df["set"] = df["set"].str.replace(r":\d+", "", regex=True)
+    df["set"] = df["set"].str.replace(r"^2(?=[A-Za-z])", "", regex=True)
+    df["word"] = df["word"].str.replace(r":\d+", "", regex=True)
+    df.to_csv(dir / f"{session}_formants.csv", index=False)
+
+def plot_formants_by_word(dir: Path, session: str, show_diphthongs: bool = True) -> None:
+    """
+    Create a vowel plot with labels showing actual words.
+    Useful for checking individual tokens.
+    """
+    parts: list[str | None] = [session, "vowel_plot_labeled", "mono" if not show_diphthongs else None]
+    filename: str = "_".join(p for p in parts if p) + ".png"
+    output_path: Path = dir / filename
+    df: pd.DataFrame = pd.read_csv(dir / f"{session}_formants.csv")
+    df['is_diphthong'] = df['label'].str.contains(':')
+    df['base_label'] = df['label'].str.replace(':1|:2', '', regex=True)
+    df['base_label'] = df['base_label'].str.replace(r"^2(?=[A-Za-z])", '', regex=True)
+    
+    # Filter out diphthongs if requested
+    if not show_diphthongs:
+        df = df[~df['is_diphthong']]
+    
+    word_means: pd.DataFrame = df.groupby(['base_label', 'set', 'word']).agg({
+        'F1': 'mean',
+        'F2': 'mean'
+    }).reset_index()
+    
+    _, ax = plt.subplots(figsize=(14, 12))
+    
+    # Color/marker per vowel set for better separation
+    vowel_sets: npt.NDArray[np.str_] = word_means['set'].unique()
+    base_palette: list[tuple[float, float, float]] = sns.color_palette("tab10")
+    markers: list[str] = ['o', 's', 'D', '^', 'v', 'P', 'X', '<', '>', 'h']
+    style_options: list[tuple[tuple[float, float, float], str]] = list(
+        itertools.product(base_palette, markers)
+    )
+    if len(style_options) < len(vowel_sets):
+        extended_palette: list[tuple[float, float, float]] = sns.color_palette("husl", len(vowel_sets))
+        style_options = list(itertools.product(extended_palette, markers))
+    style_iter = itertools.cycle(style_options)
+    style_map: dict[str, tuple[tuple[float, float, float], str]] = {
+        vowel_set: next(style_iter) for vowel_set in vowel_sets
+    }
+    
+    for vowel_set in vowel_sets:
+        subset: pd.DataFrame | pd.Series = word_means[word_means['set'] == vowel_set]
+        color, marker = style_map[vowel_set]
+        ax.scatter(subset['F2'], subset['F1'],
+                  color=color,
+                  marker=marker,
+                  s=150, alpha=0.7,
+                  edgecolors='black', linewidths=0.5,
+                  label=vowel_set)
+        
+        # Add word labels
+        for _, row in subset.iterrows():
+            ax.annotate(row['word'], 
+                       xy=(row['F2'], row['F1']),
+                       xytext=(5, 5), textcoords='offset points',
+                       fontsize=8, alpha=0.8)
+    
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+    ax.margins(0.1)
+    ax.set_xlabel('F2 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('F1 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_title('Vowel Space with Word Labels', fontsize=16, fontweight='bold')
+    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.legend(title='Vowel set', bbox_to_anchor=(1.02, 0.5), loc='center left', frameon=True)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight');
+    
+
+def add_enclosing_ellipse(ax: Axes, x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], edgecolor: str,
+                          pad_frac=0.05,      # multiplicative padding on both axes
+                          pad_abs=40.0,       # additive padding in Hz on both axes
+                          min_minor=60.0,     # absolute floor (Hz) for semi-minor axis
+                          min_minor_ratio=0.12,  # or at least this fraction of semi-major
+                          linewidth=2, linestyle="--", alpha=0.7, zorder=1):
+    """
+    Rotated ellipse that encloses all (x,y) points.
+    - Orientation from PCA (SVD).
+    - Radii chosen to enclose all points.
+    - Then inflated on BOTH axes by pad_frac and pad_abs.
+    - Minor axis has floors so it never shrinks to zero.
+    """
+    x: npt.NDArray[np.float64] = np.asarray(x, float)
+    y: npt.NDArray[np.float64] = np.asarray(y, float)
+    P: npt.NDArray[np.float64] = np.column_stack([x, y])
+    cx: float
+    cy: float
+    a: float
+    b: float
+    c: npt.NDArray[np.float64]
+    v: npt.NDArray[np.float64]
+    L: float
+    angle: float
+    e: Ellipse
+
+    if len(P) == 0:
+        return None
+
+    if len(P) == 1:
+        cx, cy = float(P[0,0]), float(P[0,1])
+        a = b = max(min_minor, pad_abs)
+        angle = 0.0
+    elif len(P) == 2:
+        # For two points, do it analytically
+        p0, p1 = P[0], P[1]
+        c = (p0 + p1) / 2.0
+        v = p1 - p0
+        L = np.hypot(v[0], v[1]) / 2.0  # half the distance -> semi-major
+        cx, cy = float(c[0]), float(c[1])
+        angle = float(np.degrees(np.arctan2(v[1], v[0])))
+
+        a = L
+        # give the line a visible thickness; enforce floors after padding
+        b = 0.0
+
+        # inflate both axes
+        a = a * (1 + pad_frac) + pad_abs
+        b = b * (1 + pad_frac) + pad_abs
+
+        # minor-axis floors
+        b = max(b, min_minor, a * min_minor_ratio)
+    else:
+        # Center and PCA orientation
+        c = P.mean(axis=0)
+        Pc: npt.NDArray[np.float64] = P - c
+        _, _, Vt = np.linalg.svd(Pc, full_matrices=False)
+        V: npt.NDArray[np.float64] = Vt.T  # columns are principal directions
+        Z: npt.NDArray[np.float64] = Pc @ V  # points in PCA frame
+
+        # Base semi-axes from per-axis maxima
+        a0: float = np.max(np.abs(Z[:,0]))
+        b0: float = np.max(np.abs(Z[:,1]))
+
+        # Scale so every point satisfies (x'/a0)^2 + (y'/b0)^2 <= k^2
+        # then set a = k*a0, b = k*b0
+        # Handle zeros safely
+        a0 = a0 if a0 > 0 else 0.0
+        b0 = b0 if b0 > 0 else 0.0
+        if a0 == 0 and b0 == 0:
+            a = b = 0.0
+        else:
+            denom: npt.NDArray[np.float64] = np.zeros(len(Z))
+            if a0 > 0: denom += (Z[:,0] / a0) ** 2
+            if b0 > 0: denom += (Z[:,1] / b0) ** 2
+            k: float = np.sqrt(denom.max()) if denom.size else 1.0
+            if not isinstance(k, Number) or k == 0: k = 1.0
+            a = k * a0
+            b = k * b0
+
+        # Inflate BOTH axes
+        a = a * (1 + pad_frac) + pad_abs
+        b = b * (1 + pad_frac) + pad_abs
+
+        # Minor-axis floors
+        # (if b was ~0 due to collinearity, this fixes it)
+        a = max(a, 1e-9)  # just to be safe
+        b = max(b, min_minor, a * min_minor_ratio)
+
+        angle = float(np.degrees(np.arctan2(V[1,0], V[0,0])))
+        cx, cy = float(c[0]), float(c[1])
+
+    e = Ellipse((cx, cy), width=2*a, height=2*b, angle=angle,
+                fill=False, edgecolor=edgecolor, linewidth=linewidth,
+                linestyle=linestyle, alpha=alpha, zorder=zorder,
+                transform=ax.transData)
+    ax.add_patch(e)
+    return cx, cy, a, b, angle, e
+
+
+def plot_vowel_formants(dir: Path, session: str, lexical_set: str | None = None, show_diphthongs: bool = True) ->  None:
+    """
+    Plot all tokens for a single lexical set and (optionally) their diphthong trajectories.
+    Words for that set are annotated directly, and reference vowels from standard.csv are overlaid.
+    """
+    target_set: str = lexical_set.upper() if lexical_set else None
+    parts: list[str | None] = [session, "vowel_plot", target_set, "mono" if not show_diphthongs else None]
+    filename: str = "_".join(p for p in parts if p) + ".png"
+    output_path: Path = dir / filename
+    df: pd.DataFrame = pd.read_csv(dir / f"{session}_formants.csv")
+    # Separate monophthongs from diphthongs
+    df['is_diphthong'] = df['label'].str.contains(':')
+    df['base_label'] = df['label'].str.replace(':1|:2', '', regex=True)
+    df['base_label'] = df['base_label'].str.replace(r"^2(?=[A-Za-z])", '', regex=True)
+
+    df = df[df['set'] == target_set].copy() if target_set else df
+    if df.empty:
+        raise ValueError(f"No observations found for lexical set '{target_set}'.")
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Single color/marker for the chosen set
+    palette: list[tuple[float, float, float]] = sns.color_palette("tab10")
+    color: tuple[float, float, float] = palette[0]
+    marker: str = 'o'
+
+    # Plot monophthongs
+    mono_df: pd.DataFrame | pd.Series = df[~df['is_diphthong']]
+    if not mono_df.empty:
+        ax.scatter(mono_df['F2'], mono_df['F1'],
+                   color=color,
+                   marker=marker,
+                   s=120, alpha=0.8,
+                   edgecolors='black', linewidths=0.6,
+                   label=target_set,
+                   zorder=3)
+        for _, row in mono_df.iterrows():
+            ax.annotate(row['word'],
+                        xy=(row['F2'], row['F1']),
+                        xytext=(6, 6), textcoords='offset points',
+                        fontsize=9, fontweight='bold', alpha=0.85)
+        f1_vals: npt.NDArray[np.float64] = mono_df['F1'].values
+        f2_vals: npt.NDArray[np.float64] = mono_df['F2'].values
+        add_enclosing_ellipse(ax, f2_vals, f1_vals, edgecolor=color,
+                              linewidth=2, linestyle="--", alpha=0.5, zorder=1)
+
+    # Plot diphthongs with arrows (only if show_diphthongs is True)
+    if show_diphthongs:
+        diph_df: pd.DataFrame | pd.Series = df[df['is_diphthong']]
+        for base_label in diph_df['base_label'].unique():
+            subset: pd.DataFrame | pd.Series = diph_df[diph_df['base_label'] == base_label].sort_values('label')
+            if len(subset) == 2:
+                x: npt.NDArray[np.float64] = subset['F2'].values
+                y: npt.NDArray[np.float64] = subset['F1'].values
+
+                # Draw arrow from :1 to :2
+                ax.annotate('', xy=(x[1], y[1]), xytext=(x[0], y[0]),
+                            arrowprops=dict(arrowstyle='->',
+                                            color=color,
+                                            lw=2, alpha=0.7), zorder=2)
+
+                # Plot start and end points
+                for idx, (_, row) in enumerate(subset.iterrows()):
+                    suffix: str = row['label'].split(':')[-1]
+                    ax.scatter(row['F2'], row['F1'],
+                               color=color,
+                               marker='X' if suffix == '2' else marker,
+                               s=120, alpha=0.8,
+                               edgecolors='black', linewidths=0.6, zorder=3)
+                    ax.annotate(f"{row['word']}:{suffix}",
+                                xy=(row['F2'], row['F1']),
+                                xytext=(6, -10 if suffix == '2' else 10), textcoords='offset points',
+                                fontsize=9, alpha=0.85)
+
+    # Overlay standard reference vowels (before inverting axes so limits expand correctly)
+    std_path = Path(__file__).parent / 'standard.csv'
+    if std_path.exists():
+        std_df: pd.DataFrame = pd.read_csv(std_path)
+        std_df.columns = std_df.columns.str.strip()
+        std_df = std_df.dropna(subset=['F1', 'F2'])
+        # Plot invisible points to expand axis limits
+        ax.scatter(std_df['F2'], std_df['F1'], alpha=0)
+        for _, row in std_df.iterrows():
+            ax.annotate(row['label'],
+                        xy=(row['F2'], row['F1']),
+                        fontsize=14, fontweight='bold',
+                        ha='center', va='center',
+                        alpha=0.85, zorder=2)
+
+    # Reverse axes (traditional vowel plot orientation)
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+    ax.margins(0.05)
+
+    # Labels and title
+    ax.set_xlabel('F2 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('F1 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_title(f'Vowel Space (F1 vs F2) — {target_set}', fontsize=16, fontweight='bold')
+
+    # Add grid
+    ax.grid(True, alpha=0.3, linestyle='--', zorder=0)
+
+    # Legend (deduplicate entries)
+    handles, labels = ax.get_legend_handles_labels()
+    unique: dict[Any, Artist] = dict(zip(labels, handles))
+    ax.legend(unique.values(), unique.keys(), bbox_to_anchor=(1.05, 1), loc='upper left',
+              frameon=True, fontsize=10, ncol=1)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+
+def plot_vowel_formants_means(dir: Path, session: str, show_diphthongs: bool = True) -> None:
+    output_path: Path = dir / f"{session}_vowel_plot_means.png"
+    if not show_diphthongs:
+        output_path = dir / f"{session}_vowel_plot_means_mono.png"
+
+    df: pd.DataFrame = pd.read_csv(dir / f"{session}_formants.csv")
+
+    # Separate monophthongs from diphthongs
+    df['is_diphthong'] = df['label'].str.contains(':')
+    df['base_label'] = df['label'].str.replace(':1|:2', '', regex=True)
+    df['base_label'] = df['base_label'].str.replace(r"^2(?=[A-Za-z])", '', regex=True)
+
+    # Calculate means for each set (and for diphthongs, keep :1/:2 separate)
+    mono_df: pd.DataFrame = df[~df['is_diphthong']]
+    mono_means: pd.DataFrame = mono_df.groupby(['set']).agg({
+        'F1': 'mean',
+        'F2': 'mean'
+    }).reset_index()
+
+    # For diphthongs, group by label to keep :1 and :2 separate
+    diph_df: pd.DataFrame = df[df['is_diphthong']]
+    diph_means: pd.DataFrame = diph_df.groupby(['label', 'set', 'base_label']).agg({
+        'F1': 'mean',
+        'F2': 'mean'
+    }).reset_index()
+
+    # Create figure
+    _, ax = plt.subplots(figsize=(12, 10))
+    # Color/marker combos for clearer legend
+    vowel_sets: npt.NDArray[np.str_] = df['set'].unique()
+    base_palette: list[tuple[float, float, float]] = sns.color_palette("tab10")
+    markers: list[str] = ['o', 's', 'D', '^', 'v', 'P', '<', '>', 'h', '*']
+    style_options: list[tuple[tuple[float, float, float], str]] = list(
+        itertools.product(base_palette, markers)
+    )
+    if len(style_options) < len(vowel_sets):
+        extended_palette: list[tuple[float, float, float]] = sns.color_palette("husl", len(vowel_sets))
+        style_options = list(itertools.product(extended_palette, markers))
+    style_iter = itertools.cycle(style_options)
+    style_map: dict[str, tuple[tuple[float, float, float], str]] = {
+        vowel_set: next(style_iter) for vowel_set in vowel_sets
+    }
+
+    # Plot monophthongs
+    for _, row in mono_means.iterrows():
+        color, marker = style_map[row['set']]
+        ax.scatter(row['F2'], row['F1'],
+                   color=color,
+                   marker=marker,
+                   s=220, alpha=0.75,
+                   label=row['set'],
+                   edgecolors='black', linewidths=1, zorder=3)
+
+        # Add text label
+        ax.text(row['F2'], row['F1'] + 10, row['set'],
+                fontsize=9, ha='center', va='center', zorder=4)
+
+    # Plot diphthongs with arrows
+    if show_diphthongs:
+        for base_label in diph_means['base_label'].unique():
+            subset: pd.DataFrame = diph_means[diph_means['base_label'] == base_label].sort_values('label')
+            if len(subset) == 2:
+                vowel_set: str = subset['set'].iloc[0]
+                color, marker = style_map[vowel_set]
+                x: npt.NDArray[np.float64] = subset['F2'].values
+                y: npt.NDArray[np.float64] = subset['F1'].values
+
+                # Draw arrow from :1 to :2
+                ax.annotate('', xy=(x[1], y[1]), xytext=(x[0], y[0]),
+                            arrowprops=dict(arrowstyle='->',
+                                            color=color,
+                                            lw=2.5, alpha=0.7), zorder=2)
+
+                # Plot start and end points
+                ax.scatter(x[0], y[0], color=color,
+                           marker=marker,
+                           s=200, alpha=0.75,
+                           edgecolors='black', linewidths=1, zorder=3)
+                ax.scatter(x[1], y[1], color=color,
+                           marker='X',
+                           s=200, alpha=0.75,
+                           edgecolors='black', linewidths=1, zorder=3)
+
+                # Add text labels
+                ax.text(x[0], y[0] + 10, base_label,
+                        fontsize=9, ha='center', va='center', zorder=4)
+
+    # Overlay standard reference vowels
+    std_path = Path(__file__).parent / 'standard.csv'
+    if std_path.exists():
+        std_df: pd.DataFrame = pd.read_csv(std_path)
+        std_df.columns = std_df.columns.str.strip()
+        std_df = std_df.dropna(subset=['F1', 'F2'])
+        # Plot invisible points to expand axis limits
+        ax.scatter(std_df['F2'], std_df['F1'], alpha=0)
+        for _, row in std_df.iterrows():
+            ax.annotate(row['label'],
+                        xy=(row['F2'], row['F1']),
+                        fontsize=14, fontweight='bold',
+                        ha='center', va='center',
+                        alpha=0.85, zorder=2)
+
+    # Reverse axes (traditional vowel plot orientation)
+    ax.invert_xaxis()
+    ax.invert_yaxis()
+    ax.margins(0.05)
+
+    # Labels and title
+    ax.set_xlabel('F2 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('F1 (Hz)', fontsize=14, fontweight='bold')
+    ax.set_title('Vowel Space - Mean Values (F1 vs F2)', fontsize=16, fontweight='bold')
+
+    # Add grid
+    ax.grid(True, alpha=0.3, linestyle='--', zorder=0)
+
+    # Legend (one entry per vowel set + references)
+    handles, labels = ax.get_legend_handles_labels()
+    unique: dict[Any, Artist] = dict(zip(labels, handles))
+    ax.legend(unique.values(), unique.keys(), bbox_to_anchor=(1.05, 1), loc='upper left',
+              frameon=True, fontsize=10, ncol=1)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+
+def run(session: str,
+        Gender: Literal['M', 'F', 'C'] = 'M',
+        target_lexical_set: str = None,
+        show_diphthongs: bool = False) -> None:
+    dir: Path = Path(__file__).parent / "sessions" / session
+    extract_formants(dir, session, Gender=Gender)
+    plot_formants_by_word(dir, session, show_diphthongs=show_diphthongs)
+    plot_vowel_formants(dir, session, lexical_set=target_lexical_set, show_diphthongs=show_diphthongs)
+    plot_vowel_formants_means(dir, session, show_diphthongs=show_diphthongs)
+
+
+def main() -> None:
+    Fire(run)
+
+
+if __name__ == "__main__":
+    main()

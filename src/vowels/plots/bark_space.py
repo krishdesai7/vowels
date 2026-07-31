@@ -7,7 +7,7 @@ import polars as pl
 
 from ..aggregate import load_points
 from ..bark import add_bark_dims
-from ..paths import data_dir, session_dir
+from ..paths import session_dir, standards_file
 from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
 from .vowel_space import _inject_controls, _text_color
@@ -44,7 +44,7 @@ def _proj_angle_expr(
 
 
 def _load_std(drop_nulls: list[str]) -> pl.LazyFrame:
-    lf: pl.LazyFrame = pl.scan_parquet(data_dir / "standards" / "male_standard.parquet")
+    lf: pl.LazyFrame = pl.scan_parquet(standards_file)
     if "Closeness" in lf.collect_schema().names():
         lf = lf.rename({"Closeness": "Openness"})
     return lf.drop_nulls(subset=drop_nulls)

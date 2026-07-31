@@ -5,7 +5,7 @@ import altair as alt
 import polars as pl
 
 from ..aggregate import load_points
-from ..paths import data_dir, session_dir
+from ..paths import session_dir, standards_file
 from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
 
@@ -52,9 +52,9 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
     diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
 
     # Layer 1: IPA reference text
-    std_df: pl.DataFrame = pl.read_parquet(
-        data_dir / "standards" / "male_standard.parquet"
-    ).drop_nulls(subset=["F1", "F2"])
+    std_df: pl.DataFrame = pl.read_parquet(standards_file).drop_nulls(
+        subset=["F1", "F2"]
+    )
     ref_layer: alt.Chart = (
         alt.Chart(std_df)
         .mark_text(color="#c0c0c0", fontSize=11, fontWeight="bold")

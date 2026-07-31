@@ -4,6 +4,7 @@ from pathlib import Path
 
 import parselmouth
 
+from ..labels import read_labels
 from ..paths import labels_file, session_dir
 
 
@@ -13,8 +14,7 @@ def label_textgrid(session: str) -> None:
     out_path: Path = d / f"{session}_labeled.TextGrid"
     intervals_csv: Path = d / f"{session}_intervals.csv"
 
-    with labels_file(session).open(encoding="utf-8") as f:
-        labels: list[str] = [ln.strip() for ln in f if ln.strip()]
+    labels: list[str] = read_labels(labels_file(session))
 
     tg: parselmouth.TextGrid = parselmouth.read(tg_path.as_posix())
     tier_number: int = 1

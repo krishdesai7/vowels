@@ -1,6 +1,8 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents working in this repository. It is
+the only agent-guidance file — the old `CLAUDE.md` was removed; do not recreate
+it.
 
 ## Project Overview
 
@@ -53,23 +55,43 @@ uv run vowels run <session> --dialect RP
 uv run vowels plot <session> -d GA
 ```
 
-### Dependencies
+### Reading-list prompter
 
-Uses `uv` for package management. Install dependencies with:
+`src/vowels/record_audio.py` is a Tkinter word prompter for recording sessions:
+it reads the `word` column of a labels CSV and pages through it one word at a
+time (space/enter/→ next, ← back, esc quit). It is **not** wired into the
+`vowels` Typer app — run it as a module.
 
 ```zsh
-uv sync --frozen
+uv run python -m vowels.record_audio            # defaults to data/labels.csv
+uv run python -m vowels.record_audio sessions/session5/labels.csv
 ```
+
+### Dependencies and checks
+
+Uses `uv` for package management (`uv sync --frozen`) and a `Justfile` for the
+two check suites:
+
+```zsh
+uv run just m   # mutable: uv sync -U, pyrefly infer, format, ruff --fix, pytest
+uv run just i   # immutable: uv sync --frozen, pyrefly check, format --diff, ruff, uv audit, pytest
+```
+
+CI (`.github/workflows/ci.yml`) runs `uv run just i` on pushes and PRs to `main`,
+so `just i` must be clean before pushing. Tests live in `tests/` and cover the
+library only — nothing exercises the Typer CLI.
 
 ## Architecture
 
 ### Data Flow
 
-1. **Input**: `sessions/<session>/<session>.wav` (audio) + `labels.txt` (looked up first at `sessions/<session>/labels.txt`, falling back to `data/labels.txt`)
+1. **Input**: `sessions/<session>/<session>.wav` (audio) + `labels.csv` (`syllable,set,word`), resolved by `paths.labels_file`: `sessions/<session>/labels.csv` first, falling back to `data/labels.csv`.
+
+   `labels.read_labels` turns each row into a pipeline label via `row_to_label`: `("2" if syllable == 2 else "") + set + "_" + word`. Set names are taken verbatim — never normalise the case. `syllable` outside `{1, 2}` raises, since the label grammar has no spelling for it. The same CSV feeds the reading-list prompter (`record_audio`), which reads only the `word` column.
 
 2. **`silences`**: Runs Praat's "To TextGrid (silences)" on the audio to create `<session>.TextGrid` with "silent" and "sounding" intervals. Tune `--min-sounding-interval` if the detected interval count doesn't match the number of labels.
 
-3. **`label`**: Reads `labels.txt` and assigns labels to "sounding" intervals in the TextGrid, producing `<session>_labeled.TextGrid`. If the label count doesn't match the interval count, writes a diagnostic CSV (`<session>_intervals.csv`) for manual correction and exits with an error.
+3. **`label`**: Reads the label list (see step 1) and assigns labels to "sounding" intervals in the TextGrid, producing `<session>_labeled.TextGrid`. If the label count doesn't match the interval count, writes a diagnostic CSV (`<session>_intervals.csv`) for manual correction and exits with an error.
 
 4. **`formants`**: Extracts F1/F2/F3 by tracking the full formant trajectory per labeled vowel interval (fasttrackpy, auto-selected ceiling) and saves the whole trajectory (many rows per token) to `<session>_formants.parquet` — the single source of truth. It does **not** generate plots. Steady-state (minimum-velocity) collapse to one representative point per token happens later, in-memory, when a plot command loads the parquet via `aggregate.load_points`.
 
@@ -100,8 +122,14 @@ Mixed-case set names (`haPPY`, `coMMA`, `leTTER`) must be entered with exact cas
 
 - **Gender**: Sets fasttrackpy's max-formant **search range** (it auto-picks the best ceiling per token) plus window length and pitch floor — M: 4500–5500 Hz, 25 ms, 75 Hz; F/C: 5000–6500 Hz, 30 ms, 100 Hz
 - **Dialect**: `GA` (default) or `RP`; sets the diphthong prior and the baseline exclusion (see [Per-speaker diphthong detection](#per-speaker-diphthong-detection)). Passed to `plot`/`bark`/`projections`/`diphthongs`/`run` via `--dialect`.
-- **`data/standards/male_standard.parquet`**: IPA reference vowel positions (Openness/Frontness/Roundness in Bark) overlaid on plots for comparison
+- **`paths.standards_file`** (`data/standards/male_standard_all.parquet`): IPA reference vowel positions overlaid on plots for comparison — Hz (`F0`–`F3`) for `vowel_space`, Bark (`Openness`/`Frontness`/`Roundness`) for `bark_space`, 31 rows. Both plot modules go through the `paths` constant; don't re-spell the path at the call site.
 
 ### Schema notes
 
 - **`Wells` values are their own names** (`Wells.PRICE == "PRICE"`), so a member is interchangeable with the parsed label text. Colors are **not** on the value — they live in `schema.COLORS` behind the `Wells.color` property. Do not put presentation or IPA data on the enum value.
+
+## Gotchas
+
+- **Typer cannot see through PEP 695 `type` aliases.** `cli.py` deliberately declares `DialectOption` with a plain assignment. Rewriting it as `type DialectOption = ...` makes Typer 0.27 fail to build *every* command — `vowels --help` included — with `RuntimeError: Type not yet supported`.
+- **The test suite never touches the CLI or the data files.** All 59 tests are library-level, so a green `just i` does not mean `vowels run` works. Smoke-test a real session (`uv run vowels diphthongs session5`, `uv run vowels plot session5`) after touching `cli.py`, `paths.py`, or the plot modules.
+- **`sessions/` holds committed outputs.** Running the pipeline overwrites tracked TextGrids and HTML; `git checkout -- sessions/<session>` after a smoke test unless you meant to update them.

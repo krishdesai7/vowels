@@ -1,7 +1,7 @@
 from typing import Final
 
 from .aggregate import baseline_bars, diphthong_report
-from .labels import SECOND_VOWEL_CENTER_RATIO
+from .labels import SECOND_VOWEL_CENTER_RATIO, read_labels
 from .paths import project_root, session_dir
 from .pipeline import (
     detect_silences,
@@ -34,6 +34,7 @@ __all__: Final[list[str]] = [
     "parse_labels",
     "precompute_ellipse",
     "project_root",
+    "read_labels",
     "save_bark_chart",
     "save_bark_projections",
     "save_chart",

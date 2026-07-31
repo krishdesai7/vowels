@@ -8,7 +8,7 @@ class Wells(StrEnum):
     """A Wells standard lexical set.
 
     The value is the set's own name, so a member is interchangeable with the
-    label text parsed out of `labels.txt`. Presentation (colour) and dialectal
+    label text built from `labels.csv`. Presentation (colour) and dialectal
     realisation (IPA) are looked up separately -- see `Wells.color` and
     `DialectProfile.expected` -- rather than overloaded onto the value.
     """

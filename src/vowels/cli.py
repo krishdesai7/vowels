@@ -19,7 +19,10 @@ from . import (
 
 app = typer.Typer(no_args_is_help=True, help="Vowel formant analysis toolkit.")
 
-type DialectOption = Annotated[
+# A plain assignment, not a PEP 695 `type` alias: Typer resolves annotations
+# through `typing.get_type_hints`, which hands it the unevaluated `TypeAliasType`
+# and makes every command fail to build with "Type not yet supported".
+DialectOption = Annotated[
     Dialect,
     typer.Option(
         "--dialect", "-d", help="Speaker dialect (GA/RP)", case_sensitive=False
@@ -61,7 +64,7 @@ def silences(
 def label(
     session: str,
 ) -> None:
-    """Label sounding intervals in the TextGrid from labels.txt."""
+    """Label sounding intervals in the TextGrid from labels.csv."""
     label_textgrid(session)
 
 

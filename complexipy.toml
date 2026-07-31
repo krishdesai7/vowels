@@ -1,0 +1,6 @@
+paths = ["."]
+max-complexity-allowed = 10
+sort = "desc"
+check-script = true
+no-ignore = true
+ignore-complexity = true

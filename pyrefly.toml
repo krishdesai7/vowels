@@ -1,0 +1,6 @@
+python-interpreter-path = ".venv/bin/python"
+search-path = [".", "typings"]
+site-package-path = []
+
+check-unannotated-defs = true
+infer-return-types = "checked"

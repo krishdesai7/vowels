@@ -1,7 +1,9 @@
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class Wells(StrEnum):
@@ -141,6 +143,8 @@ class Dialect(StrEnum):
     def profile(self) -> DialectProfile:
         return PROFILES[self]
 
+
+DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
 
 _RP_EXPECTED: Final[Mapping[Wells, str]] = {
     Wells.KIT: "ɪ",

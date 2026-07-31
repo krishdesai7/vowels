@@ -1,17 +1,20 @@
-from pathlib import Path
 from types import SimpleNamespace
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import numpy as np
 import parselmouth
 import polars as pl
 import pytest
-from numpy.typing import NDArray
 
 import vowels.pipeline.formants as formants_mod
 from vowels import parse_labels
 from vowels.pipeline.formants import _gender_params, extract_formants, winner_to_rows
 from vowels.schema import Gender
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from numpy.typing import NDArray
 
 REQUIRED_COLUMNS: Final[set[str]] = {"time", "label", "F1", "F2", "F3", "set", "word"}
 
@@ -88,7 +91,7 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
         winner, f0, token_id=7, label="2haPPY_coffee", t1=1.0, t2=1.2
     )
     assert len(rows) == 3
-    EXPECTED_KEYS: set[str] = {
+    expected_keys: set[str] = {
         "token_id",
         "label",
         "set",
@@ -110,7 +113,7 @@ def test_winner_to_rows_schema_and_rel_time() -> None:
         "max_formant",
         "error",
     }
-    assert set(rows[0].keys()) == EXPECTED_KEYS
+    assert set(rows[0].keys()) == expected_keys
     assert rows[0]["token_id"] == 7
     assert rows[0]["set"] == "haPPY"
     assert rows[0]["word"] == "coffee"
@@ -246,7 +249,7 @@ def test_extract_formants_orchestration(
 
     # Stub: process_audio_file -> fake candidates with 3 frames each call
     n_frames = 3
-    _winner_df = pl.DataFrame(
+    winner_df = pl.DataFrame(
         {
             "time": [0.1, 0.2, 0.3],
             "F1": [400.0] * n_frames,
@@ -262,18 +265,18 @@ def test_extract_formants_orchestration(
             "error": [0.01] * n_frames,
         }
     )
-    _f0: NDArray[np.double] = np.array([120.0, 121.0, 119.0])
-    _fake_winner: SimpleNamespace = SimpleNamespace(to_df=lambda output: _winner_df)
-    _fake_candidates: SimpleNamespace = SimpleNamespace(winner=_fake_winner, f0=_f0)
+    f0: NDArray[np.double] = np.array([120.0, 121.0, 119.0])
+    fake_winner: SimpleNamespace = SimpleNamespace(to_df=lambda **_kw: winner_df)
+    fake_candidates: SimpleNamespace = SimpleNamespace(winner=fake_winner, f0=f0)
     monkeypatch.setattr(
-        formants_mod, "process_audio_file", lambda *a, **kw: _fake_candidates
+        formants_mod, "process_audio_file", lambda *_a, **_kw: fake_candidates
     )
 
     extract_formants(session, Gender.M)
 
     out: pl.LazyFrame = pl.scan_parquet(session_d / f"{session}_formants.parquet")
 
-    EXPECTED_COLS: set[str] = {
+    expected_cols: set[str] = {
         "token_id",
         "label",
         "set",
@@ -295,7 +298,7 @@ def test_extract_formants_orchestration(
         "max_formant",
         "error",
     }
-    assert EXPECTED_COLS.issubset(set(out.collect_schema().names()))
+    assert expected_cols.issubset(set(out.collect_schema().names()))
 
     # Silent interval was skipped -> exactly 2 unique token_ids
     actual: pl.DataFrame = out.select("token_id", "set", "is_diphthong").collect()

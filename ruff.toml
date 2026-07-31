@@ -33,8 +33,19 @@ extend-select = [
     "TCH",  # (flake8-type-checking): Automatically moves type-only imports behind if TYPE_CHECKING: blocks to reduce runtime import overhead.
 ]
 
+ignore = [
+    # IPA is this project's working alphabet: ɪ, ɑ, ː and friends are the
+    # intended characters, not Latin lookalikes typed by mistake.
+    "ambiguous-unicode-character-string",
+    "ambiguous-unicode-character-docstring",
+    "ambiguous-unicode-character-comment",
+]
+
 [lint.per-file-ignores]
 "tests/**.py" = ["assert"]
+# Wells writes the weak-vowel sets as haPPY, coMMA, leTTER; the case carries
+# meaning (it marks the vowel under discussion), so it is not ours to normalise.
+"src/vowels/schema.py" = ["mixed-case-variable-in-class-scope"]
 
 [format]
 quote-style = "double"

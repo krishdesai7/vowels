@@ -1,5 +1,5 @@
 import re
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import altair as alt
 import polars as pl
@@ -8,6 +8,9 @@ from ..aggregate import load_points
 from ..paths import session_dir, standards_file
 from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _DIPH_NAMES: frozenset[str] = frozenset(s for s in GROUPS.get("Diphthongs", []))
 
@@ -41,15 +44,15 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
     }
 
     # Each clause passes (true) for non-matching rows and gates on the param for matches
-    _sets: str = " && ".join(
+    sets: str = " && ".join(
         f'(datum.set === "{s}" ? show_{s} : true)' for s in all_sets
     )
 
-    mono_vis: str = f"showWords && showMono && ({_sets})"
-    means_vis: str = f"showMeans && showMono && ({_sets})"
-    ellipse_vis: str = f"showMono && ({_sets})"
-    diph_vis: str = f"showWords && showDiph && ({_sets})"
-    diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
+    mono_vis: str = f"showWords && showMono && ({sets})"
+    means_vis: str = f"showMeans && showMono && ({sets})"
+    ellipse_vis: str = f"showMono && ({sets})"
+    diph_vis: str = f"showWords && showDiph && ({sets})"
+    diph_means_vis: str = f"showMeans && showDiph && ({sets})"
 
     # Layer 1: IPA reference text
     std_df: pl.DataFrame = pl.read_parquet(standards_file).drop_nulls(
@@ -98,49 +101,50 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
             )
         )
 
-    # Layer 3: Monophthong tokens
-    layers.append(
-        alt.Chart(mono_lf.collect())
-        .mark_circle(size=60, stroke="white", strokeWidth=0.5)
-        .encode(
-            x=alt.X("F2:Q", scale=alt.Scale(reverse=True), title="F2 (Hz)"),
-            y=alt.Y("F1:Q", scale=alt.Scale(reverse=True), title="F1 (Hz)"),
-            color=alt.Color(
-                "set:N", scale=color_scale, legend=alt.Legend(title="Lexical set")
+    layers.extend(
+        (
+            # Layer 3: Monophthong tokens
+            alt.Chart(mono_lf.collect())
+            .mark_circle(size=60, stroke="white", strokeWidth=0.5)
+            .encode(
+                x=alt.X("F2:Q", scale=alt.Scale(reverse=True), title="F2 (Hz)"),
+                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True), title="F1 (Hz)"),
+                color=alt.Color(
+                    "set:N", scale=color_scale, legend=alt.Legend(title="Lexical set")
+                ),
+                opacity=(
+                    alt.when(mono_vis).then(alt.value(0.85)).otherwise(alt.value(0.0))
+                ),
+                tooltip=[
+                    alt.Tooltip("word:N", title="Word"),
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip("F1:Q", title="F1 (Hz)", format=".0f"),
+                    alt.Tooltip("F2:Q", title="F2 (Hz)", format=".0f"),
+                    alt.Tooltip("F3:Q", title="F3 (Hz)", format=".0f"),
+                ],
             ),
-            opacity=(
-                alt.when(mono_vis).then(alt.value(0.85)).otherwise(alt.value(0.0))
+            # Layer 4: Per-set means (monophthongs only)
+            alt.Chart(
+                mono_lf.group_by("set")
+                .agg(pl.col.F1.mean(), pl.col.F2.mean())
+                .collect()
+            )
+            .mark_point(
+                shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
+            )
+            .encode(
+                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                opacity=(
+                    alt.when(means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0))
+                ),
+                tooltip=[
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip("F1:Q", title="F1 mean (Hz)", format=".0f"),
+                    alt.Tooltip("F2:Q", title="F2 mean (Hz)", format=".0f"),
+                ],
             ),
-            tooltip=[
-                alt.Tooltip("word:N", title="Word"),
-                alt.Tooltip("set:N", title="Set"),
-                alt.Tooltip("F1:Q", title="F1 (Hz)", format=".0f"),
-                alt.Tooltip("F2:Q", title="F2 (Hz)", format=".0f"),
-                alt.Tooltip("F3:Q", title="F3 (Hz)", format=".0f"),
-            ],
-        )
-    )
-
-    # Layer 4: Per-set means (monophthongs only)
-    layers.append(
-        alt.Chart(
-            mono_lf.group_by("set").agg(pl.col.F1.mean(), pl.col.F2.mean()).collect()
-        )
-        .mark_point(
-            shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
-        )
-        .encode(
-            x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-            y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-            color=alt.Color("set:N", scale=color_scale, legend=None),
-            opacity=(
-                alt.when(means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0))
-            ),
-            tooltip=[
-                alt.Tooltip("set:N", title="Set"),
-                alt.Tooltip("F1:Q", title="F1 mean (Hz)", format=".0f"),
-                alt.Tooltip("F2:Q", title="F2 mean (Hz)", format=".0f"),
-            ],
         )
     )
 
@@ -173,15 +177,15 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
             .collect()
             .row(0)
         )
-        F2_rng: float = (f2_max - f2_min) or 1.0
-        F1_rng: float = (f1_max - f1_min) or 1.0
-        W, H = 650.0, 550.0
+        f2_rng: float = (f2_max - f2_min) or 1.0
+        f1_rng: float = (f1_max - f1_min) or 1.0
+        chart_w, chart_h = 650.0, 550.0
 
         def _angle_expr() -> pl.Expr:
             return (
                 pl.arctan2(
-                    -(pl.col("F2") - pl.col("F2_s")) / F2_rng * W,
-                    -(pl.col("F1") - pl.col("F1_s")) / F1_rng * H,
+                    -(pl.col("F2") - pl.col("F2_s")) / f2_rng * chart_w,
+                    -(pl.col("F1") - pl.col("F1_s")) / f1_rng * chart_h,
                 )
                 .degrees()
                 .alias("angle")
@@ -211,88 +215,86 @@ def build_chart(lf: pl.LazyFrame, session: str) -> alt.LayerChart | alt.FacetCha
 
         ang_scale: alt.Scale = alt.Scale(domain=[-180, 180], range=[-180, 180])
 
-        # Token lines
-        layers.append(
-            alt.Chart(diph_lf.collect())
-            .mark_line(strokeWidth=1.5)
-            .encode(
-                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                detail="token:N",
-                order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.4))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Start dots at point 1
-        layers.append(
-            alt.Chart(diph_lf.filter(pl.col("point_num") == 1).collect())
-            .mark_point(shape="circle", size=25, filled=True)
-            .encode(
-                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.5))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Arrowhead triangles at point 2
-        layers.append(
-            alt.Chart(tok_arr.collect())
-            .mark_point(shape="triangle", size=60, filled=True)
-            .encode(
-                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.7))
-                .otherwise(alt.value(0.0)),
-                tooltip=[
-                    alt.Tooltip("word:N", title="Word"),
-                    alt.Tooltip("set:N", title="Set"),
-                    alt.Tooltip("F1:Q", title="F1 (Hz)", format=".0f"),
-                    alt.Tooltip("F2:Q", title="F2 (Hz)", format=".0f"),
-                ],
-            )
-        )
-        # Mean line
-        layers.append(
-            alt.Chart(diph_means_lf.collect())
-            .mark_line(strokeWidth=5)
-            .encode(
-                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                detail="set:N",
-                order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_means_vis)
-                .then(alt.value(0.9))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Mean arrowhead at point 2
-        layers.append(
-            alt.Chart(mean_arr.collect())
-            .mark_point(
-                shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5
-            )
-            .encode(
-                x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
-                y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_means_vis)
-                .then(alt.value(1.0))
-                .otherwise(alt.value(0.0)),
-                tooltip=[
-                    alt.Tooltip("set:N", title="Set"),
-                    alt.Tooltip("F1:Q", title="F1 mean (Hz)", format=".0f"),
-                    alt.Tooltip("F2:Q", title="F2 mean (Hz)", format=".0f"),
-                ],
+        layers.extend(
+            (
+                # Token lines
+                alt.Chart(diph_lf.collect())
+                .mark_line(strokeWidth=1.5)
+                .encode(
+                    x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                    y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    detail="token:N",
+                    order=alt.Order("point_num:O"),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.4))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Start dots at point 1
+                alt.Chart(diph_lf.filter(pl.col("point_num") == 1).collect())
+                .mark_point(shape="circle", size=25, filled=True)
+                .encode(
+                    x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                    y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.5))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Arrowhead triangles at point 2
+                alt.Chart(tok_arr.collect())
+                .mark_point(shape="triangle", size=60, filled=True)
+                .encode(
+                    x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                    y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    angle=alt.Angle("angle:Q", scale=ang_scale),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.7))
+                    .otherwise(alt.value(0.0)),
+                    tooltip=[
+                        alt.Tooltip("word:N", title="Word"),
+                        alt.Tooltip("set:N", title="Set"),
+                        alt.Tooltip("F1:Q", title="F1 (Hz)", format=".0f"),
+                        alt.Tooltip("F2:Q", title="F2 (Hz)", format=".0f"),
+                    ],
+                ),
+                # Mean line
+                alt.Chart(diph_means_lf.collect())
+                .mark_line(strokeWidth=5)
+                .encode(
+                    x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                    y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    detail="set:N",
+                    order=alt.Order("point_num:O"),
+                    opacity=alt.when(diph_means_vis)
+                    .then(alt.value(0.9))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Mean arrowhead at point 2
+                alt.Chart(mean_arr.collect())
+                .mark_point(
+                    shape="triangle",
+                    size=250,
+                    filled=True,
+                    stroke="white",
+                    strokeWidth=1.5,
+                )
+                .encode(
+                    x=alt.X("F2:Q", scale=alt.Scale(reverse=True)),
+                    y=alt.Y("F1:Q", scale=alt.Scale(reverse=True)),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    angle=alt.Angle("angle:Q", scale=ang_scale),
+                    opacity=alt.when(diph_means_vis)
+                    .then(alt.value(1.0))
+                    .otherwise(alt.value(0.0)),
+                    tooltip=[
+                        alt.Tooltip("set:N", title="Set"),
+                        alt.Tooltip("F1:Q", title="F1 mean (Hz)", format=".0f"),
+                        alt.Tooltip("F2:Q", title="F2 mean (Hz)", format=".0f"),
+                    ],
+                ),
             )
         )
 
@@ -405,12 +407,14 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         "var allBtn=document.getElementById('vt-all-btn');"
         "function syncAllBtn(){"
         "var setBtns=document.querySelectorAll('.vt-set-btn');"
-        "var allOn=Array.from(setBtns).every(function(b){return b.classList.contains('active');});"
+        "var allOn=Array.from(setBtns)"
+        ".every(function(b){return b.classList.contains('active');});"
         "allBtn.classList.toggle('active',allOn);"
         "}"
         "allBtn.addEventListener('click',function(){"
         "var setBtns=document.querySelectorAll('.vt-set-btn');"
-        "var allOn=Array.from(setBtns).every(function(b){return b.classList.contains('active');});"
+        "var allOn=Array.from(setBtns)"
+        ".every(function(b){return b.classList.contains('active');});"
         "var next=!allOn;"
         "this.classList.toggle('active',next);"
         "setBtns.forEach(function(btn){"
@@ -437,7 +441,7 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
     )
     html = html.replace("</head>", css + js + "</head>", 1)
 
-    html = re.sub(
+    return re.sub(
         r'(<div id="vis"></div>)',
         '<div style="display:flex;align-items:flex-start;gap:20px;padding:12px">'
         + sidebar
@@ -445,8 +449,6 @@ def _inject_controls(html: str, *, has_diph: bool, set_colors: dict[str, str]) -
         html,
         count=1,
     )
-
-    return html
 
 
 def save_chart(session: str, dialect: Dialect) -> None:
@@ -459,4 +461,3 @@ def save_chart(session: str, dialect: Dialect) -> None:
     html: str = build_chart(lf, session).to_html()
     html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
-    print(f"Created {out_path}")

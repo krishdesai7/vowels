@@ -1,10 +1,8 @@
-from pathlib import Path
+from typing import TYPE_CHECKING, TypedDict
 
-import numpy as np
 import parselmouth
 import polars as pl
 from fasttrackpy import CandidateTracks, OneTrack, process_audio_file
-from numpy.typing import NDArray
 
 from ..labels import (
     get_set_name,
@@ -13,6 +11,12 @@ from ..labels import (
 )
 from ..paths import session_dir
 from ..schema import Gender
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import numpy as np
+    from numpy.typing import NDArray
 
 _MIN_DURATION: float = 0.05
 
@@ -84,7 +88,16 @@ def winner_to_rows(
     return rows
 
 
-def _gender_params(gender: Gender) -> dict[str, float | int]:
+class GenderParams(TypedDict):
+    """The `process_audio_file` tuning knobs that vary by speaker gender."""
+
+    min_max_formant: int
+    max_max_formant: int
+    window_length: float
+    pitch_floor: int
+
+
+def _gender_params(gender: Gender) -> GenderParams:
     if gender == Gender.M:
         return {
             "min_max_formant": 4500,
@@ -104,7 +117,7 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
     d: Path = session_dir(session)
     wav_path: Path = d / f"{session}.wav"
     tg_path: Path = d / f"{session}_labeled.TextGrid"
-    params: dict[str, float | int] = _gender_params(gender)
+    params: GenderParams = _gender_params(gender)
 
     tg: parselmouth.TextGrid = parselmouth.read(tg_path.as_posix())
     labeled_tier: int = 1
@@ -134,7 +147,7 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
             xmin=t1,
             xmax=t2,
             n_formants=4,
-            **params,  # type: ignore
+            **params,
         )
         winner: OneTrack = candidates.winner
         # to_df(output="formants") already yields columns:
@@ -147,10 +160,5 @@ def extract_formants(session: str, gender: Gender = Gender.M) -> None:
         token_id += 1
 
     if not rows:
-        print(
-            f"Warning: no qualifying vowel intervals found in {session}; "
-            "no parquet written"
-        )
         return
     pl.DataFrame(rows).write_parquet(d / f"{session}_formants.parquet")
-    print(f"Created {d / f'{session}_formants.parquet'} ({token_id} tokens)")

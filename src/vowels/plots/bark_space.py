@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import altair as alt
 import plotly.graph_objects as go
@@ -11,6 +10,9 @@ from ..paths import session_dir, standards_file
 from ..schema import GROUPS, Dialect, Wells
 from .ellipse import precompute_ellipse
 from .vowel_space import _inject_controls, _text_color
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DIV_ID: Final[str] = "bark-plot"
 
@@ -156,18 +158,19 @@ def build_bark_chart(lf: pl.LazyFrame, session: str) -> go.Figure:
                 continue
 
             tokens: list[str] = sub_df["token"].unique().to_list()
-            x_segs: list[float] = []
-            y_segs: list[float] = []
-            z_segs: list[float] = []
+            # A None entry breaks the plotly line, so each token draws separately.
+            x_segs: list[float | None] = []
+            y_segs: list[float | None] = []
+            z_segs: list[float | None] = []
             for tok in tokens:
                 pts: pl.DataFrame = sub_df.filter(pl.col("token") == tok).sort(
                     "point_num"
                 )
                 if pts.height < 2:
                     continue
-                x_segs += pts["Frontness"].to_list() + [None]
-                y_segs += pts["Openness"].to_list() + [None]
-                z_segs += pts["Roundness"].to_list() + [None]
+                x_segs += [*pts["Frontness"].to_list(), None]
+                y_segs += [*pts["Openness"].to_list(), None]
+                z_segs += [*pts["Roundness"].to_list(), None]
 
             if x_segs:
                 traces.append(
@@ -362,12 +365,14 @@ def _inject_bark_controls(
         "var allBtn=document.getElementById('vt-all-btn');"
         "function syncAllBtn(){"
         "var setBtns=document.querySelectorAll('.vt-set-btn');"
-        "var allOn=Array.from(setBtns).every(function(b){return b.classList.contains('active');});"
+        "var allOn=Array.from(setBtns)"
+        ".every(function(b){return b.classList.contains('active');});"
         "allBtn.classList.toggle('active',allOn);"
         "}"
         "allBtn.addEventListener('click',function(){"
         "var setBtns=document.querySelectorAll('.vt-set-btn');"
-        "var allOn=Array.from(setBtns).every(function(b){return b.classList.contains('active');});"
+        "var allOn=Array.from(setBtns)"
+        ".every(function(b){return b.classList.contains('active');});"
         "var next=!allOn;"
         "this.classList.toggle('active',next);"
         "setBtns.forEach(function(btn){"
@@ -390,12 +395,11 @@ def _inject_bark_controls(
 
     html = html.replace("</head>", css + js + "</head>", 1)
     html = html.replace("<body>", f"<body>{sidebar}", 1)
-    html = html.replace(
+    return html.replace(
         'class="plotly-graph-div"',
         'class="plotly-graph-div" style="width:100%;height:700px;"',
         1,
     )
-    return html
 
 
 def save_bark_chart(session: str, dialect: Dialect) -> None:
@@ -417,7 +421,6 @@ def save_bark_chart(session: str, dialect: Dialect) -> None:
 
     out_path: Path = session_dir(session) / f"{session}_bark_space.html"
     out_path.write_text(html)
-    print(f"Created {out_path}")
 
 
 # ── 2-D projections ──────────────────────────────────────────────────────────
@@ -502,49 +505,52 @@ def _projection_chart(
             )
         )
 
-    layers.append(
-        alt.Chart(mono_lf.collect())
-        .mark_circle(size=60, stroke="white", strokeWidth=0.5)
-        .encode(
-            x=x_enc,
-            y=y_enc,
-            color=alt.Color(
-                "set:N", scale=color_scale, legend=alt.Legend(title="Lexical set")
+    layers.extend(
+        (
+            alt.Chart(mono_lf.collect())
+            .mark_circle(size=60, stroke="white", strokeWidth=0.5)
+            .encode(
+                x=x_enc,
+                y=y_enc,
+                color=alt.Color(
+                    "set:N", scale=color_scale, legend=alt.Legend(title="Lexical set")
+                ),
+                opacity=alt.when(mono_vis)
+                .then(alt.value(0.85))
+                .otherwise(alt.value(0.0)),
+                tooltip=[
+                    alt.Tooltip("word:N", title="Word"),
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip(f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"),
+                    alt.Tooltip(f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"),
+                ],
             ),
-            opacity=alt.when(mono_vis).then(alt.value(0.85)).otherwise(alt.value(0.0)),
-            tooltip=[
-                alt.Tooltip("word:N", title="Word"),
-                alt.Tooltip("set:N", title="Set"),
-                alt.Tooltip(f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"),
-                alt.Tooltip(f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"),
-            ],
-        )
-    )
-
-    layers.append(
-        alt.Chart(
-            mono_lf.group_by("set")
-            .agg(pl.col(x_col).mean(), pl.col(y_col).mean())
-            .sort("set")
-            .collect()
-        )
-        .mark_point(
-            shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
-        )
-        .encode(
-            x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
-            y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
-            color=alt.Color("set:N", scale=color_scale, legend=None),
-            opacity=alt.when(means_vis).then(alt.value(1.0)).otherwise(alt.value(0.0)),
-            tooltip=[
-                alt.Tooltip("set:N", title="Set"),
-                alt.Tooltip(
-                    f"{x_col}:Q", title=f"{_AXIS_TITLES[x_col]} mean", format=".2f"
-                ),
-                alt.Tooltip(
-                    f"{y_col}:Q", title=f"{_AXIS_TITLES[y_col]} mean", format=".2f"
-                ),
-            ],
+            alt.Chart(
+                mono_lf.group_by("set")
+                .agg(pl.col(x_col).mean(), pl.col(y_col).mean())
+                .sort("set")
+                .collect()
+            )
+            .mark_point(
+                shape="diamond", size=200, filled=True, stroke="white", strokeWidth=1.5
+            )
+            .encode(
+                x=alt.X(f"{x_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[x_col])),
+                y=alt.Y(f"{y_col}:Q", scale=alt.Scale(reverse=_AXIS_REVERSED[y_col])),
+                color=alt.Color("set:N", scale=color_scale, legend=None),
+                opacity=alt.when(means_vis)
+                .then(alt.value(1.0))
+                .otherwise(alt.value(0.0)),
+                tooltip=[
+                    alt.Tooltip("set:N", title="Set"),
+                    alt.Tooltip(
+                        f"{x_col}:Q", title=f"{_AXIS_TITLES[x_col]} mean", format=".2f"
+                    ),
+                    alt.Tooltip(
+                        f"{y_col}:Q", title=f"{_AXIS_TITLES[y_col]} mean", format=".2f"
+                    ),
+                ],
+            ),
         )
     )
 
@@ -598,92 +604,98 @@ def _projection_chart(
         x_sc: alt.Scale = alt.Scale(reverse=x_rev)
         y_sc: alt.Scale = alt.Scale(reverse=y_rev)
 
-        # Token lines
-        layers.append(
-            alt.Chart(diph_lf.collect())
-            .mark_line(strokeWidth=1.5)
-            .encode(
-                x=alt.X(f"{x_col}:Q", scale=x_sc),
-                y=alt.Y(f"{y_col}:Q", scale=y_sc),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                detail="token:N",
-                order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.4))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Start dots at point 1
-        layers.append(
-            alt.Chart(diph_lf.filter(pl.col("point_num") == 1).collect())
-            .mark_point(shape="circle", size=25, filled=True)
-            .encode(
-                x=alt.X(f"{x_col}:Q", scale=x_sc),
-                y=alt.Y(f"{y_col}:Q", scale=y_sc),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.5))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Arrowhead triangles at point 2
-        layers.append(
-            alt.Chart(tok_arr.collect())
-            .mark_point(shape="triangle", size=60, filled=True)
-            .encode(
-                x=alt.X(f"{x_col}:Q", scale=x_sc),
-                y=alt.Y(f"{y_col}:Q", scale=y_sc),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_vis)
-                .then(alt.value(0.7))
-                .otherwise(alt.value(0.0)),
-                tooltip=[
-                    alt.Tooltip("word:N", title="Word"),
-                    alt.Tooltip("set:N", title="Set"),
-                    alt.Tooltip(f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"),
-                    alt.Tooltip(f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"),
-                ],
-            )
-        )
-        # Mean line
-        layers.append(
-            alt.Chart(diph_means_lf.collect())
-            .mark_line(strokeWidth=5)
-            .encode(
-                x=alt.X(f"{x_col}:Q", scale=x_sc),
-                y=alt.Y(f"{y_col}:Q", scale=y_sc),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                detail="set:N",
-                order=alt.Order("point_num:O"),
-                opacity=alt.when(diph_means_vis)
-                .then(alt.value(0.9))
-                .otherwise(alt.value(0.0)),
-            )
-        )
-        # Mean arrowhead at point 2
-        layers.append(
-            alt.Chart(mean_arr.collect())
-            .mark_point(
-                shape="triangle", size=250, filled=True, stroke="white", strokeWidth=1.5
-            )
-            .encode(
-                x=alt.X(f"{x_col}:Q", scale=x_sc),
-                y=alt.Y(f"{y_col}:Q", scale=y_sc),
-                color=alt.Color("set:N", scale=color_scale, legend=None),
-                angle=alt.Angle("angle:Q", scale=ang_scale),
-                opacity=alt.when(diph_means_vis)
-                .then(alt.value(1.0))
-                .otherwise(alt.value(0.0)),
-                tooltip=[
-                    alt.Tooltip("set:N", title="Set"),
-                    alt.Tooltip(
-                        f"{x_col}:Q", title=f"{_AXIS_TITLES[x_col]} mean", format=".2f"
-                    ),
-                    alt.Tooltip(
-                        f"{y_col}:Q", title=f"{_AXIS_TITLES[y_col]} mean", format=".2f"
-                    ),
-                ],
+        layers.extend(
+            (
+                # Token lines
+                alt.Chart(diph_lf.collect())
+                .mark_line(strokeWidth=1.5)
+                .encode(
+                    x=alt.X(f"{x_col}:Q", scale=x_sc),
+                    y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    detail="token:N",
+                    order=alt.Order("point_num:O"),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.4))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Start dots at point 1
+                alt.Chart(diph_lf.filter(pl.col("point_num") == 1).collect())
+                .mark_point(shape="circle", size=25, filled=True)
+                .encode(
+                    x=alt.X(f"{x_col}:Q", scale=x_sc),
+                    y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.5))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Arrowhead triangles at point 2
+                alt.Chart(tok_arr.collect())
+                .mark_point(shape="triangle", size=60, filled=True)
+                .encode(
+                    x=alt.X(f"{x_col}:Q", scale=x_sc),
+                    y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    angle=alt.Angle("angle:Q", scale=ang_scale),
+                    opacity=alt.when(diph_vis)
+                    .then(alt.value(0.7))
+                    .otherwise(alt.value(0.0)),
+                    tooltip=[
+                        alt.Tooltip("word:N", title="Word"),
+                        alt.Tooltip("set:N", title="Set"),
+                        alt.Tooltip(
+                            f"{x_col}:Q", title=_AXIS_TITLES[x_col], format=".2f"
+                        ),
+                        alt.Tooltip(
+                            f"{y_col}:Q", title=_AXIS_TITLES[y_col], format=".2f"
+                        ),
+                    ],
+                ),
+                # Mean line
+                alt.Chart(diph_means_lf.collect())
+                .mark_line(strokeWidth=5)
+                .encode(
+                    x=alt.X(f"{x_col}:Q", scale=x_sc),
+                    y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    detail="set:N",
+                    order=alt.Order("point_num:O"),
+                    opacity=alt.when(diph_means_vis)
+                    .then(alt.value(0.9))
+                    .otherwise(alt.value(0.0)),
+                ),
+                # Mean arrowhead at point 2
+                alt.Chart(mean_arr.collect())
+                .mark_point(
+                    shape="triangle",
+                    size=250,
+                    filled=True,
+                    stroke="white",
+                    strokeWidth=1.5,
+                )
+                .encode(
+                    x=alt.X(f"{x_col}:Q", scale=x_sc),
+                    y=alt.Y(f"{y_col}:Q", scale=y_sc),
+                    color=alt.Color("set:N", scale=color_scale, legend=None),
+                    angle=alt.Angle("angle:Q", scale=ang_scale),
+                    opacity=alt.when(diph_means_vis)
+                    .then(alt.value(1.0))
+                    .otherwise(alt.value(0.0)),
+                    tooltip=[
+                        alt.Tooltip("set:N", title="Set"),
+                        alt.Tooltip(
+                            f"{x_col}:Q",
+                            title=f"{_AXIS_TITLES[x_col]} mean",
+                            format=".2f",
+                        ),
+                        alt.Tooltip(
+                            f"{y_col}:Q",
+                            title=f"{_AXIS_TITLES[y_col]} mean",
+                            format=".2f",
+                        ),
+                    ],
+                ),
             )
         )
 
@@ -722,14 +734,14 @@ def build_bark_projections(lf: pl.LazyFrame, session: str) -> alt.HConcatChart:
         s: alt.param(name=f"show_{s}", value=True) for s in all_sets
     }
 
-    _sets: str = " && ".join(
+    sets: str = " && ".join(
         f'(datum.set === "{s}" ? show_{s} : true)' for s in all_sets
     )
-    mono_vis: str = f"showWords && showMono && ({_sets})"
-    means_vis: str = f"showMeans && showMono && ({_sets})"
-    ellipse_vis: str = f"showMono && ({_sets})"
-    diph_vis: str = f"showWords && showDiph && ({_sets})"
-    diph_means_vis: str = f"showMeans && showDiph && ({_sets})"
+    mono_vis: str = f"showWords && showMono && ({sets})"
+    means_vis: str = f"showMeans && showMono && ({sets})"
+    ellipse_vis: str = f"showMono && ({sets})"
+    diph_vis: str = f"showWords && showDiph && ({sets})"
+    diph_means_vis: str = f"showMeans && showDiph && ({sets})"
 
     std_lf: pl.LazyFrame = _load_std(["Frontness", "Roundness"])
 
@@ -772,4 +784,3 @@ def save_bark_projections(session: str, dialect: Dialect) -> None:
     html: str = build_bark_projections(lf, session).to_html()
     html = _inject_controls(html, has_diph=has_diph, set_colors=set_colors)
     out_path.write_text(html)
-    print(f"Created {out_path}")

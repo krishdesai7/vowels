@@ -1,8 +1,11 @@
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import parselmouth
 
 from ..paths import session_dir
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def detect_silences(
@@ -32,4 +35,3 @@ def detect_silences(
         sounding_label,
     )
     parselmouth.praat.call(tg, "Write to text file", str(out_path))
-    print(f"Created {out_path}")

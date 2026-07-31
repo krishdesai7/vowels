@@ -15,9 +15,7 @@ from .plots import (
     save_bark_projections,
     save_chart,
 )
-from .schema import DIPHTHONGS, Dialect, Gender, Wells
-
-DEFAULT_DIALECT: Final[Dialect] = Dialect.GA
+from .schema import DEFAULT_DIALECT, DIPHTHONGS, Dialect, Gender, Wells
 
 __all__: Final[list[str]] = [
     "DEFAULT_DIALECT",

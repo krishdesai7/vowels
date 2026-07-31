@@ -1,10 +1,12 @@
 import os
-from collections.abc import Callable
-from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import polars as pl
 import typer
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 
 def formant_midpoints(i: int) -> pl.Expr:
@@ -21,8 +23,8 @@ def formant_midpoints(i: int) -> pl.Expr:
 
 def bark_normalize(i: int) -> pl.Expr:
     col: pl.Expr = pl.col(f"F{i}")
-    Z: pl.Expr = (26.81 * col) / (1960 + col) - 0.53
-    return Z.alias(f"Z{i}")
+    z: pl.Expr = (26.81 * col) / (1960 + col) - 0.53
+    return z.alias(f"Z{i}")
 
 
 def validate_input_file(input_file: Path) -> Path:
@@ -87,7 +89,8 @@ def main(
         typer.Option(
             "--all",
             "-a",
-            help="Save all columns to a *_all.parquet file instead of the default subset.",
+            help="Save all columns to a *_all.parquet file "
+            "instead of the default subset.",
         ),
     ] = False,
 ) -> None:

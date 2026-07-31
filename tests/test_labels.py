@@ -1,4 +1,4 @@
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -17,6 +17,9 @@ from vowels.labels import (
 from vowels.paths import project_root
 from vowels.schema import Wells
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def test_disyllable_prefix_constant() -> None:
     assert DISYLLABLE_PREFIX == "2"
@@ -24,7 +27,7 @@ def test_disyllable_prefix_constant() -> None:
 
 def test_second_vowel_center_ratio() -> None:
     # CVCV weighting C=1, V=2 -> second vowel center at 5/6 of the interval
-    assert SECOND_VOWEL_CENTER_RATIO == pytest.approx(5 / 6)
+    assert pytest.approx(5 / 6) == SECOND_VOWEL_CENTER_RATIO
 
 
 def test_normalize_label_strips_disyllabic_prefix() -> None:
@@ -50,7 +53,7 @@ def test_is_diphthong_set() -> None:
 
 
 def test_diphthong_names_match_schema() -> None:
-    assert DIPHTHONG_NAMES == frozenset(w.name for w in DIPHTHONGS)
+    assert frozenset(w.name for w in DIPHTHONGS) == DIPHTHONG_NAMES
 
 
 def test_row_to_label() -> None:

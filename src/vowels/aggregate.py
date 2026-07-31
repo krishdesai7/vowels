@@ -1,9 +1,8 @@
 import math
-from typing import Final, cast
+from typing import TYPE_CHECKING, Final, cast
 
 import numpy as np
 import polars as pl
-from numpy.typing import NDArray
 
 from .bark import add_bark_dims
 from .labels import (
@@ -13,7 +12,11 @@ from .labels import (
     normalize_label,
 )
 from .paths import session_dir
-from .schema import Dialect, DialectProfile
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+    from .schema import Dialect, DialectProfile
 
 
 def _zscore[T: np.number](x: NDArray[T]) -> NDArray[np.double]:
@@ -135,7 +138,7 @@ def _point(
     chosen_f0: np.double = f0[idx]
     if math.isnan(chosen_f0):
         remaining: NDArray[np.double] = f0[~np.isnan(f0)]
-        chosen_f0 = cast(np.double, remaining.mean() if remaining.size else np.nan)
+        chosen_f0 = cast("np.double", remaining.mean() if remaining.size else np.nan)
     return {
         "label": label,
         "set": set_name,
@@ -237,7 +240,7 @@ def _baseline(
         for s, sc in set_score.items()
         if s not in profile.diphthongs
         and s not in profile.r_colored
-        and not disyll.get(s, False)
+        and not disyll.get(s)
     ]
     if not mono:
         return 0.0, MIN_SPREAD
@@ -264,7 +267,7 @@ def _decide(
     between keeps the dialect's expectation, which is where genuinely
     borderline sets belong.
     """
-    if disyll.get(set_name, False):
+    if disyll.get(set_name):
         return False
     if score > q3 + _FAR_FENCE * iqr:
         return True

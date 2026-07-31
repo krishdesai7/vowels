@@ -1,8 +1,10 @@
 import csv
-from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from .schema import DIPHTHONGS
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DISYLLABLE_PREFIX: Final[str] = "2"
 CONSONANT_WEIGHT: Final[float] = 1.0

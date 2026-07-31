@@ -1,7 +1,6 @@
 import math
 from collections.abc import Sequence
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import polars as pl
@@ -18,6 +17,9 @@ from vowels.aggregate import (
     steady_state_index,
     token_displacement,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_picks_flat_region_in_center() -> None:
@@ -97,7 +99,7 @@ def test_monophthong_yields_one_point() -> None:
     assert rows[0]["label"] == "TRAP_cat"
     assert rows[0]["set"] == "TRAP"
     assert rows[0]["word"] == "cat"
-    assert rows[0]["F1"] == 500.0
+    assert rows[0]["F1"] == pytest.approx(500.0)
 
 
 def test_diphthong_yields_two_suffixed_points() -> None:
@@ -148,7 +150,7 @@ def test_all_nan_f0_still_yields_a_point() -> None:
         lf, "KIT_bit", is_diphthong=False
     )
     assert len(rows) == 1
-    assert math.isnan(cast(float, rows[0]["F0"]))
+    assert math.isnan(cast("float", rows[0]["F0"]))
     assert rows[0]["F1"] in (500.0, 700.0)
 
 
@@ -175,8 +177,10 @@ def test_points_from_trajectory_classifies_then_collapses() -> None:
         "F3",
     }
     labels: dict[str, pl.Series] = points.select("label").collect().to_dict()
-    assert "PRICE_buy:1" in labels["label"] and "PRICE_buy:2" in labels["label"]
-    assert "TRAP_cat" in labels["label"] and "TRAP_cat:1" not in labels["label"]
+    assert "PRICE_buy:1" in labels["label"]
+    assert "PRICE_buy:2" in labels["label"]
+    assert "TRAP_cat" in labels["label"]
+    assert "TRAP_cat:1" not in labels["label"]
 
 
 def test_displacement_small_for_monophthong() -> None:
@@ -307,7 +311,7 @@ def test_diphthong_report_columns_and_flip(tmp_path, monkeypatch) -> None:
     d: Path = tmp_path / "sX"
     d.mkdir()
     traj.sink_parquet(d / "sX_formants.parquet")
-    monkeypatch.setattr(aggregate, "session_dir", lambda s: d)
+    monkeypatch.setattr(aggregate, "session_dir", lambda _session: d)
 
     report: pl.DataFrame = diphthong_report("sX", dialect=DEFAULT_DIALECT)
     assert set(report.columns) == {"set", "n", "score", "canonical", "final", "flipped"}
@@ -332,7 +336,7 @@ def test_baseline_bars_calculation(tmp_path, monkeypatch) -> None:
     d: Path = tmp_path / "sX"
     d.mkdir()
     traj.sink_parquet(d / "sX_formants.parquet")
-    monkeypatch.setattr(aggregate, "session_dir", lambda s: d)
+    monkeypatch.setattr(aggregate, "session_dir", lambda _session: d)
 
     q3, iqr, mono_bar, diph_bar = baseline_bars("sX", dialect=DEFAULT_DIALECT)
     # A set is monophthongal inside the baseline body and diphthongal only

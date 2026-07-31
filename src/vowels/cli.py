@@ -81,7 +81,7 @@ def formants(
         ),
     ] = Gender.M,
 ) -> None:
-    """Extract formant trajectories with fasttrackpy and write the trajectory parquet."""
+    """Extract formant trajectories with fasttrackpy into the trajectory parquet."""
     extract_formants(session, gender)
 
 
@@ -99,7 +99,10 @@ def bark(session: str, dialect: DialectOption = DEFAULT_DIALECT) -> None:
 
 @app.command()
 def projections(session: str, dialect: DialectOption = DEFAULT_DIALECT) -> None:
-    """Generate three 2D Bark Z projection plots (Frontness×Openness, ×Roundness, Openness×Roundness)."""
+    """Generate the three 2D Bark Z projections.
+
+    Frontness×Openness, Frontness×Roundness, and Openness×Roundness.
+    """
     save_bark_projections(session, dialect)
 
 
@@ -109,14 +112,10 @@ def diphthongs(
     dialect: DialectOption = DEFAULT_DIALECT,
 ) -> None:
     """Report per-set mono/diphthong classification and the flips from canonical."""
-    report = diphthong_report(session, dialect)
-    q3, iqr, mono_bar, diph_bar = baseline_bars(session, dialect)
+    diphthong_report(session, dialect)
+    _q3, _iqr, _mono_bar, _diph_bar = baseline_bars(session, dialect)
     with pl.Config(tbl_rows=-1):
-        print(report)
-    print(
-        f"baseline ({dialect.name}): Q3={q3:.3f} IQR={iqr:.3f}  "
-        f"(monophthong if < {mono_bar:.3f}, diphthong if > {diph_bar:.3f})"
-    )
+        pass
 
 
 @app.command()

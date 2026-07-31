@@ -1,8 +1,12 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from vowels import precompute_ellipse
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 def test_returns_none_for_fewer_than_three_points() -> None:

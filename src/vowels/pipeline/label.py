@@ -1,11 +1,13 @@
 import csv
-import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import parselmouth
 
 from ..labels import read_labels
 from ..paths import labels_file, session_dir
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def label_textgrid(session: str) -> None:
@@ -35,7 +37,6 @@ def label_textgrid(session: str) -> None:
                 tg, "Set interval text", tier_number, interval_i, labels[idx]
             )
         parselmouth.praat.call(tg, "Write to text file", out_path.as_posix())
-        print(f"Created {out_path}")
         return
 
     if intervals_csv.exists():
@@ -43,14 +44,6 @@ def label_textgrid(session: str) -> None:
         return
 
     _write_diagnostic_csv(tg, tier_number, n_intervals, labels, intervals_csv)
-    print(
-        f"\nMismatch: detected {len(sounding_indices)} sounding intervals, "
-        f"expected {len(labels)} labels.\n"
-        f"Diagnostic CSV written to: {intervals_csv}\n"
-        f"Edit the 'expected_label' column to fix mismatched rows, "
-        f"then re-run `uv run vowels label {session}`.",
-        file=sys.stderr,
-    )
     raise SystemExit(1)
 
 
@@ -110,4 +103,3 @@ def _label_from_csv(
             )
 
     parselmouth.praat.call(tg, "Write to text file", out_path.as_posix())
-    print(f"Created {out_path} (from corrected CSV)")

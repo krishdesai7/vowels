@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from pathlib import Path
 
 
@@ -10,9 +9,9 @@ def project_root() -> Path:
     raise RuntimeError("Cannot find project root: no pyproject.toml found")
 
 
-session_dir: Callable[[str], Path] = lambda session: (
-    project_root() / "sessions" / session
-)
+def session_dir(session: str) -> Path:
+    return project_root() / "sessions" / session
+
 
 data_dir: Path = project_root() / "data"
 
